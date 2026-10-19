@@ -41,6 +41,10 @@ Pull requests, review comments, and CI checks are followed in VS Code with the *
 ### Explain every change: what changed, why, how it fits the architecture, and what you should check.
 **Why:** The goal is for you to understand the whole application, not just receive code.
 
+### When explaining code, add a short summary in Roman Nepali (Nepali written in English letters).
+Keep technical terms in English (class, constructor, `internal`, `Result<T>`), and explain the idea around them in Roman Nepali. Example: "Yo `protected` constructor lai bahira bata call garna mildaina, tesaile invalid Result banna sakdaina."
+**Why:** The user understands concepts faster in their own language. English alone was getting confusing for tricky code.
+
 ### If a requirement is unclear, ask instead of guessing.
 **Why:** A question costs a minute. A wrong guess costs a rewrite.
 
