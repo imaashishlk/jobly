@@ -92,6 +92,8 @@ const cases = [
   [filesHook, write("C:\\temp\\outside.cs", "x"), "deny"],
   [filesHook, write("../outside.cs", "x"), "deny"],
   [filesHook, write(".env", "KEY=1"), "deny"],
+  [filesHook, write("docker/.env.local", "KEY=1"), "deny"],
+  [filesHook, write("docker/.env.example", "KEY=change-me"), "ask"],
   [filesHook, write("src/Jobly.Api/appsettings.json", fakePasswordConnection), "deny"],
   [filesHook, write("tests/Jobly.Application.Tests/JobServiceTests.cs", '[Fact(Skip = "later")] public void A() {}'), "deny"],
   // Files: need approval

@@ -49,6 +49,12 @@ docker compose -f docker/docker-compose.yml up
 ### The build context is the repository root, with a `.dockerignore`.
 **Why:** The API image needs `src/` and the solution file, and the client image needs `client/`. The `.dockerignore` keeps `bin/`, `obj/`, `node_modules/`, `.git/`, and secrets out of the image, which keeps builds fast and images small and safe.
 
+### Publish ports on `127.0.0.1` only (`"127.0.0.1:48217:8080"`), with unusual host ports set in `docker/.env`.
+**Why:**
+- Without `127.0.0.1`, Docker listens on every network interface, so other devices on the same network (office or café Wi-Fi) could reach SQL Server and the API.
+- It also avoids a Docker Desktop IPv6 issue on Windows where `http://localhost` fails to load.
+- Unusual ports (48217, 48233) avoid clashes with other software, and `.env` makes them easy to change.
+
 ### Use multi-stage builds.
 Build with the SDK image, then copy the output into a small runtime image.
 **Why:** The final image contains only what is needed to run. It's smaller, starts faster, and has less attack surface (no compiler, no source code).

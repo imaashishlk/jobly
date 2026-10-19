@@ -13,7 +13,7 @@ The repository is at an early stage. The layout below is the agreed target. Wher
 ## Layout
 
 ```
-Jobly.sln
+Jobly.slnx               Solution (XML format). Shared settings: Directory.Build.props, Directory.Packages.props, global.json
 src/
   Jobly.Domain/          Entities, value objects, domain rules, Result/Error types (Common/). References nothing.
   Jobly.Application/     Use-case services, DTOs, repository interfaces, integration contracts (Integrations/<Name>/). References Domain only.
@@ -44,7 +44,7 @@ You may run these without asking:
 ```bash
 dotnet build
 dotnet test
-dotnet test --filter "FullyQualifiedName~<Namespace>.<Class>.<Method>"   # single test
+dotnet test --project tests/<Project> --filter-method "<Namespace>.<Class>.<Method>"   # single test (wildcards: "*Method*")
 dotnet format
 dotnet run --project src/Jobly.Api
 docker compose -f docker/docker-compose.yml up -d --build                # start or rebuild the whole stack

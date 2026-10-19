@@ -1,0 +1,27 @@
+<!--
+  Settings shared by every project in the repository.
+  MSBuild picks this file up automatically for any .csproj in this folder or below,
+  so individual project files stay short.
+-->
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+
+    <!-- The compiler warns when something might be null, so null bugs show up at build time. -->
+    <Nullable>enable</Nullable>
+
+    <!-- Common namespaces (System, System.Linq, ...) are imported automatically in every file. -->
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- A warning fails the build, so "the build passes" always means "the build is clean". -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!--
+      CS8524: "switch does not handle unnamed enum values". We suppress it on purpose:
+      a switch over an enum with no `_` fallback then compiles when every value is handled,
+      and fails the build (CS8509, an error) as soon as a new enum value is not handled.
+      This turns the "use switch" rule into a compile-time check.
+    -->
+    <NoWarn>$(NoWarn);CS8524</NoWarn>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,31 @@
+<!-- Unit tests for the Application layer (every service method gets tests). -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- xUnit v3 test projects are small console apps that run their own tests. -->
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <!--
+      TEMPORARY: the Application layer has no code yet, so this project has zero tests, which the test
+      runner reports as an error (exit code 8). Ignore that one exit code until the first service test
+      is added, then delete this line so an accidentally empty test project fails again.
+    -->
+    <TestingPlatformCommandLineArguments>$(TestingPlatformCommandLineArguments) --ignore-exit-code 8</TestingPlatformCommandLineArguments>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Every test file can use [Fact], [Theory] and Assert without a using line. -->
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Jobly.Application\Jobly.Application.csproj" />
+  </ItemGroup>
+
+</Project>

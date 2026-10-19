@@ -1,0 +1,44 @@
+# The whole local stack. Run from the repository root:
+#   docker compose -f docker/docker-compose.yml up -d --build    start or rebuild
+#   docker compose -f docker/docker-compose.yml ps               what's running
+#   docker compose -f docker/docker-compose.yml logs api         logs of one service
+#   docker compose -f docker/docker-compose.yml down             stop (data is kept; never add -v)
+#
+# Settings come from docker/.env (copy docker/.env.example and fill it in). ${NAME:-default} uses the
+# value from .env when set, otherwise the default after ":-".
+
+name: jobly
+
+services:
+  api:
+    build:
+      context: ..                       # The repository root, so the Dockerfile can copy src/ and the props files.
+      dockerfile: docker/api/Dockerfile
+    ports:
+      # 127.0.0.1 = reachable only from your own machine, not from other devices on your network.
+      # Also avoids a Docker Desktop IPv6 issue that breaks http://localhost on Windows.
+      - "127.0.0.1:${JOBLY_API_PORT:-48217}:8080" # your machine : container
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+
+  sqlserver:
+    # Pinned version, so every machine runs the same SQL Server. Not used by the code yet; ready for the first feature with data.
+    image: mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04
+    ports:
+      - "127.0.0.1:${JOBLY_SQL_PORT:-48233}:1433"   # Only your machine can connect (for example from VS Code or SSMS).
+    environment:
+      ACCEPT_EULA: "Y"
+      # ":?" stops compose with this message if the password is missing, instead of starting a broken database.
+      MSSQL_SA_PASSWORD: "${SQL_SA_PASSWORD:?Set SQL_SA_PASSWORD in docker/.env (copy docker/.env.example)}"
+    volumes:
+      - sqlserver-data:/var/opt/mssql  # A named volume keeps the database when containers stop or are rebuilt.
+    healthcheck:
+      # Healthy once SQL Server answers a query. "$$" passes a literal "$" to the container's shell.
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  sqlserver-data:

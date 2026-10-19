@@ -38,5 +38,8 @@ This is the only approved test helper package. It's added when the API test proj
 ## Run a single test
 
 ```bash
-dotnet test --filter "FullyQualifiedName~Jobly.Application.Tests.JobServiceTests.CreateJob_TitleIsEmpty_ReturnsValidationError"
+dotnet test --project tests/Jobly.Application.Tests --filter-method "Jobly.Application.Tests.JobServiceTests.CreateJob_TitleIsEmpty_ReturnsValidationError"
+dotnet test --project tests/Jobly.Application.Tests --filter-class "Jobly.Application.Tests.JobServiceTests"   # all tests in one class
 ```
+
+Tests run on the Microsoft Testing Platform (switched on in `global.json`), the runner xUnit v3 uses on .NET 10. That's why the filter options are `--filter-method` and `--filter-class` instead of the older `--filter "FullyQualifiedName~..."`.

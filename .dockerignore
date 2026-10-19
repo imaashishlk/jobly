@@ -1,0 +1,24 @@
+# Files Docker never copies into an image. The build context is the repository root.
+
+# Build output and IDE files: Docker builds its own.
+**/bin/
+**/obj/
+**/.vs/
+**/TestResults/
+
+# Not needed to build the API image.
+.git/
+.claude/
+.reviews/
+docs/
+tests/
+client/node_modules/
+
+# Secrets must never end up inside an image.
+**/.env
+**/.env.*
+!**/.env.example
+
+# The SDK image ships its own SDK version, which may differ from the local pin.
+# The project targets net10.0, so any .NET 10 SDK builds it.
+global.json

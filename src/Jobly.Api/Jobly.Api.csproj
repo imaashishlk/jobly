@@ -1,0 +1,14 @@
+<!-- The web entry point: Minimal API endpoints, validation, auth, and the composition root (Program.cs). -->
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Jobly.Application\Jobly.Application.csproj" />
+    <ProjectReference Include="..\Jobly.Infrastructure\Jobly.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Lets the test project use classes marked `internal`, so they don't have to be public just for testing. -->
+    <InternalsVisibleTo Include="Jobly.Api.Tests" />
+  </ItemGroup>
+
+</Project>

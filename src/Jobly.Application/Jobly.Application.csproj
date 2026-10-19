@@ -1,0 +1,8 @@
+<!-- Use cases (services), DTOs, and the interfaces they need (repositories, integrations). Knows only the Domain. -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Jobly.Domain\Jobly.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

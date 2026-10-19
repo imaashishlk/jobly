@@ -1,0 +1,10 @@
+# Let git normalize line endings for all text files.
+* text=auto
+
+# Files that run inside Linux containers must keep Linux (LF) line endings,
+# or shells and Docker can fail with confusing errors.
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+.env.example text eol=lf
