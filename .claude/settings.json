@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "plansDirectory": "docs/plans",
+  "worktree": {
+    "baseRef": "head"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build)",
+      "Bash(dotnet build *)",
+      "Bash(dotnet test)",
+      "Bash(dotnet test *)",
+      "Bash(dotnet format)",
+      "Bash(dotnet format *)",
+      "Bash(dotnet run --project src/Jobly.Api)",
+      "Bash(dotnet run --project src/Jobly.Api *)",
+      "PowerShell(dotnet build)",
+      "PowerShell(dotnet build *)",
+      "PowerShell(dotnet test)",
+      "PowerShell(dotnet test *)",
+      "PowerShell(dotnet format)",
+      "PowerShell(dotnet format *)",
+      "PowerShell(dotnet run --project src/Jobly.Api)",
+      "PowerShell(dotnet run --project src/Jobly.Api *)",
+      "Bash(docker compose -f docker/docker-compose.yml up*)",
+      "Bash(docker compose -f docker/docker-compose.yml down)",
+      "Bash(docker compose -f docker/docker-compose.yml logs*)",
+      "Bash(docker compose -f docker/docker-compose.yml ps*)",
+      "PowerShell(docker compose -f docker/docker-compose.yml up*)",
+      "PowerShell(docker compose -f docker/docker-compose.yml down)",
+      "PowerShell(docker compose -f docker/docker-compose.yml logs*)",
+      "PowerShell(docker compose -f docker/docker-compose.yml ps*)"
+    ],
+    "ask": [
+      "Bash(dotnet ef *)",
+      "Bash(dotnet add *)",
+      "Bash(dotnet remove *)",
+      "Bash(dotnet restore *)",
+      "Bash(dotnet user-secrets *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)",
+      "Bash(git pull *)",
+      "Bash(git fetch *)",
+      "Bash(git clone *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(sqlcmd *)",
+      "PowerShell(dotnet ef *)",
+      "PowerShell(dotnet add *)",
+      "PowerShell(dotnet remove *)",
+      "PowerShell(dotnet restore *)",
+      "PowerShell(dotnet user-secrets *)",
+      "PowerShell(npm *)",
+      "PowerShell(npx *)",
+      "PowerShell(git commit *)",
+      "PowerShell(git push *)",
+      "PowerShell(git merge *)",
+      "PowerShell(git rebase *)",
+      "PowerShell(git pull *)",
+      "PowerShell(git fetch *)",
+      "PowerShell(git clone *)",
+      "PowerShell(Invoke-WebRequest *)",
+      "PowerShell(Invoke-RestMethod *)",
+      "PowerShell(curl *)",
+      "PowerShell(wget *)",
+      "PowerShell(sqlcmd *)",
+      "PowerShell(Invoke-Sqlcmd *)",
+      "WebFetch",
+      "WebSearch",
+      "Artifact",
+      "Edit(.claude/**)"
+    ],
+    "deny": [
+      "Bash(rm *)",
+      "Bash(rmdir *)",
+      "Bash(del *)",
+      "Bash(git clean *)",
+      "Bash(git rm *)",
+      "Bash(git reset --hard *)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(dotnet ef migrations remove *)",
+      "Bash(dotnet ef database drop *)",
+      "PowerShell(Remove-Item *)",
+      "PowerShell(rm *)",
+      "PowerShell(del *)",
+      "PowerShell(git clean *)",
+      "PowerShell(git rm *)",
+      "PowerShell(git reset --hard *)",
+      "PowerShell(git push --force *)",
+      "PowerShell(git push -f *)",
+      "PowerShell(dotnet ef migrations remove *)",
+      "PowerShell(dotnet ef database drop *)",
+      "Bash(docker system prune*)",
+      "Bash(docker volume rm *)",
+      "Bash(docker compose * down -v*)",
+      "PowerShell(docker system prune*)",
+      "PowerShell(docker volume rm *)",
+      "PowerShell(docker compose * down -v*)",
+      "mcp__claude-in-chrome",
+      "Edit(**/Migrations/**)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Edit(**/secrets.json)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/secrets.json)"
+    ],
+    "blockReadsOutsideWorkingDirectories": true
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-shell.js\"",
+            "shell": "bash",
+            "timeout": 10,
+            "onFailure": "block",
+            "statusMessage": "Checking command against Jobly guardrails"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-files.js\"",
+            "shell": "bash",
+            "timeout": 10,
+            "onFailure": "block",
+            "statusMessage": "Checking file change against Jobly guardrails"
+          }
+        ]
+      }
+    ]
+  }
+}
