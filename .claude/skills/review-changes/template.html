@@ -1,0 +1,309 @@
+<title>__TITLE__</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Layout: a single reading column — summary first (goal, stats, layers, checks), then one collapsible card per changed file. */
+  :root {
+    --bg: #f5f7f7;
+    --surface: #ffffff;
+    --fg: #1b2526;
+    --muted: #5d6b6d;
+    --line: #dde4e4;
+    --accent: #0f6e6a;
+    --add-bg: #e3f5e8;
+    --add-fg: #1d6b35;
+    --del-bg: #fbe7e6;
+    --del-fg: #a3302a;
+    --warn: #9a6400;
+    --warn-bg: #fdf1dc;
+    --note-bg: #eaf3f2;
+    --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", "Cascadia Code", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121819; --surface: #1a2223; --fg: #dde6e6; --muted: #93a3a4; --line: #2c3839;
+      --accent: #5cc4bc; --add-bg: #17331f; --add-fg: #7fd39a; --del-bg: #3a1c1b; --del-fg: #f0928b;
+      --warn: #e5b45a; --warn-bg: #3a2d14; --note-bg: #1c3130; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121819; --surface: #1a2223; --fg: #dde6e6; --muted: #93a3a4; --line: #2c3839;
+    --accent: #5cc4bc; --add-bg: #17331f; --add-fg: #7fd39a; --del-bg: #3a1c1b; --del-fg: #f0928b;
+    --warn: #e5b45a; --warn-bg: #3a2d14; --note-bg: #1c3130; color-scheme: dark;
+  }
+  body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+  .page {
+    max-width: 1180px; margin: 0 auto; display: grid; gap: 28px;
+    padding-block: 28px 64px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  h1, h2, h3 { margin: 0; text-wrap: balance; font-weight: 600; }
+  h1 { font-size: 1.6rem; }
+  h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 500; }
+  p { margin: 0; }
+  code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+  a { color: var(--accent); }
+  a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Header */
+  .header { display: grid; gap: 10px; }
+  .refs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: var(--muted); font-size: 0.9rem; }
+  .ref { font-family: var(--font-mono); font-size: 0.82rem; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 1px 7px; color: var(--fg); }
+  .goal { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; display: grid; gap: 6px; max-width: 72ch; }
+  .goal.missing { background: var(--del-bg); border-color: var(--del-fg); }
+  .goal .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .goal.missing .label, .goal.missing p { color: var(--del-fg); }
+  .stats { display: flex; flex-wrap: wrap; gap: 6px 18px; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .stats b { color: var(--fg); font-weight: 600; }
+  .stats .plus { color: var(--add-fg); } .stats .minus { color: var(--del-fg); }
+
+  /* Layers: where the change lives in clean architecture */
+  .layers { display: flex; flex-wrap: wrap; gap: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
+  .layer { flex: 1 1 120px; padding: 10px 12px; border-right: 1px solid var(--line); display: grid; gap: 2px; text-decoration: none; color: var(--fg); min-width: 0; }
+  .layer:last-child { border-right: 0; }
+  .layer .count { font-variant-numeric: tabular-nums; font-size: 1.15rem; font-weight: 600; }
+  .layer .name { font-size: 0.78rem; color: var(--muted); }
+  .layer.empty { color: var(--muted); background: var(--bg); }
+  .layer.empty .count { font-weight: 400; }
+
+  /* Rule checks */
+  .checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .check { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: baseline; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 9px 12px; }
+  .check .detail { color: var(--muted); font-size: 0.88rem; }
+  .pill { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; border-radius: 999px; padding: 2px 8px; text-align: center; }
+  .pill.pass { background: var(--add-bg); color: var(--add-fg); }
+  .pill.warn { background: var(--warn-bg); color: var(--warn); }
+  .pill.fail { background: var(--del-bg); color: var(--del-fg); }
+  .pill.na { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+
+  /* Toolbar */
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+  .progress { font-variant-numeric: tabular-nums; color: var(--muted); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg button { font: inherit; font-size: 0.85rem; background: var(--surface); color: var(--muted); border: 0; padding: 5px 12px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+
+  /* File cards */
+  .files { display: grid; gap: 14px; }
+  .file { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; min-width: 0; }
+  .file.reviewed { opacity: 0.72; }
+  .file summary { list-style: none; cursor: pointer; padding: 12px 14px; display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
+  .file summary::-webkit-details-marker { display: none; }
+  .file summary::before { content: "▸"; color: var(--muted); transition: transform 0.15s; }
+  .file[open] summary::before { transform: rotate(90deg); }
+  .path { font-family: var(--font-mono); font-size: 0.86rem; overflow-wrap: anywhere; min-width: 0; }
+  .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .tag { border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; }
+  .tag.added { color: var(--add-fg); border-color: var(--add-fg); }
+  .tag.deleted { color: var(--del-fg); border-color: var(--del-fg); }
+  .tag.uncommitted { color: var(--warn); border-color: var(--warn); }
+  .file-body { border-top: 1px solid var(--line); display: grid; }
+  .why { padding: 12px 14px; display: grid; gap: 4px; max-width: 80ch; }
+  .why .label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); font-weight: 600; }
+  .reviewed-toggle { display: flex; gap: 6px; align-items: center; padding: 0 14px 12px; font-size: 0.85rem; color: var(--muted); }
+  .truncated { padding: 8px 14px; background: var(--warn-bg); color: var(--warn); font-size: 0.85rem; }
+
+  /* Diff */
+  .diff-wrap { overflow-x: auto; border-top: 1px solid var(--line); }
+  table.diff { border-collapse: collapse; width: 100%; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.5; }
+  .diff td { padding: 0 8px; vertical-align: top; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .diff td.num { width: 1%; min-width: 3.2em; text-align: right; color: var(--muted); user-select: none; white-space: nowrap; border-right: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  .diff.split td.code { width: 49%; }
+  .diff.split td.code.left { border-right: 1px solid var(--line); }
+  .diff td.add { background: var(--add-bg); }
+  .diff td.del { background: var(--del-bg); }
+  .diff td.empty { background: var(--bg); }
+  .diff tr.hunk td { background: var(--note-bg); color: var(--muted); padding: 3px 8px; }
+  .diff .sign { user-select: none; color: var(--muted); }
+  .diff tr.note td { padding: 0; }
+  .note-box { margin: 4px 8px 8px; background: var(--note-bg); border: 1px solid var(--accent); border-radius: 6px; padding: 8px 12px; font-family: var(--font-body); font-size: 0.88rem; white-space: normal; display: flex; gap: 8px; }
+  .note-box .who { color: var(--accent); font-weight: 600; white-space: nowrap; }
+
+  /* Lists */
+  .plain { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; max-width: 80ch; }
+  .commits { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .commits li { display: flex; gap: 10px; }
+  .commits .sha { font-family: var(--font-mono); font-size: 0.82rem; color: var(--muted); }
+  section { display: grid; gap: 10px; }
+  footer { color: var(--muted); font-size: 0.82rem; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<!-- The review content. The /review-changes skill replaces __DATA__ with JSON (see SKILL.md). -->
+<script type="application/json" id="review-data">__DATA__</script>
+
+<main class="page" id="app"></main>
+
+<script>
+(() => {
+  const data = JSON.parse(document.getElementById("review-data").textContent);
+  const app = document.getElementById("app");
+  const LAYERS = ["Domain", "Application", "Infrastructure", "Api", "Tests", "Client", "Docker", "Docs", "Config"];
+
+  // Small helper: create an element with attributes and children (text is always set safely as text, never as HTML).
+  function el(tag, attrs, ...children) {
+    const node = document.createElement(tag);
+    for (const [key, value] of Object.entries(attrs || {})) {
+      if (value === undefined || value === null || value === false) continue;
+      if (key === "class") node.className = value;
+      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+      else node.setAttribute(key, value === true ? "" : value);
+    }
+    for (const child of children.flat()) {
+      if (child === null || child === undefined || child === false) continue;
+      node.append(child instanceof Node ? child : document.createTextNode(String(child)));
+    }
+    return node;
+  }
+
+  const storageKey = (name) => `review:${data.branch}:${name}`;
+  function load(name, fallback) { try { const v = localStorage.getItem(storageKey(name)); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } }
+  function save(name, value) { try { localStorage.setItem(storageKey(name), JSON.stringify(value)); } catch { /* storage blocked: fine */ } }
+
+  // Turn a unified diff into rows. Each row has a left (old) and right (new) side for split view.
+  function parseDiff(text) {
+    const rows = [];
+    let oldNo = 0, newNo = 0, dels = [], adds = [];
+    const flush = () => {
+      const count = Math.max(dels.length, adds.length);
+      for (let i = 0; i < count; i++) rows.push({ type: "change", left: dels[i] || null, right: adds[i] || null });
+      dels = []; adds = [];
+    };
+    for (const line of String(text || "").split("\n")) {
+      const hunk = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@(.*)$/);
+      if (hunk) { flush(); oldNo = +hunk[1]; newNo = +hunk[2]; rows.push({ type: "hunk", text: line }); continue; }
+      if (/^(diff --git|index |--- |\+\+\+ |new file mode|deleted file mode|similarity index|rename (from|to))/.test(line)) continue;
+      if (line.startsWith("-")) { dels.push({ no: oldNo++, text: line.slice(1) }); continue; }
+      if (line.startsWith("+")) { adds.push({ no: newNo++, text: line.slice(1) }); continue; }
+      if (line.startsWith("\\")) continue;
+      flush();
+      if (line === "" ) continue;
+      const textPart = line.startsWith(" ") ? line.slice(1) : line;
+      rows.push({ type: "context", left: { no: oldNo++, text: textPart }, right: { no: newNo++, text: textPart } });
+    }
+    flush();
+    return rows;
+  }
+
+  function noteRow(note, colspan) {
+    return el("tr", { class: "note" }, el("td", { colspan }, el("div", { class: "note-box" }, el("span", { class: "who" }, "Note"), el("span", {}, note.text))));
+  }
+
+  // Notes attach to a line number on the new side ("new") or old side ("old").
+  function notesFor(file, side, no) {
+    return (file.notes || []).filter((n) => (n.side || "new") === side && n.line === no);
+  }
+
+  function renderDiff(file, mode) {
+    const rows = parseDiff(file.diff);
+    if (rows.length === 0) return el("p", { class: "why" }, "No line changes to show (binary, rename, or empty file).");
+    const table = el("table", { class: `diff ${mode}` });
+    for (const row of rows) {
+      if (row.type === "hunk") { table.append(el("tr", { class: "hunk" }, el("td", { colspan: mode === "split" ? 4 : 3 }, row.text))); continue; }
+      const left = row.left, right = row.right;
+      const isContext = row.type === "context";
+      if (mode === "split") {
+        table.append(el("tr", {},
+          el("td", { class: "num" }, left ? left.no : ""),
+          el("td", { class: `code left ${left ? (isContext ? "" : "del") : "empty"}` }, left ? left.text : ""),
+          el("td", { class: "num" }, right ? right.no : ""),
+          el("td", { class: `code ${right ? (isContext ? "" : "add") : "empty"}` }, right ? right.text : "")));
+      } else {
+        if (isContext) {
+          table.append(el("tr", {}, el("td", { class: "num" }, left.no), el("td", { class: "num" }, right.no), el("td", { class: "code" }, el("span", { class: "sign" }, "  "), right.text)));
+        } else {
+          if (left) table.append(el("tr", {}, el("td", { class: "num" }, left.no), el("td", { class: "num" }, ""), el("td", { class: "code del" }, el("span", { class: "sign" }, "- "), left.text)));
+          if (right) table.append(el("tr", {}, el("td", { class: "num" }, ""), el("td", { class: "num" }, right.no), el("td", { class: "code add" }, el("span", { class: "sign" }, "+ "), right.text)));
+        }
+      }
+      const colspan = mode === "split" ? 4 : 3;
+      if (left && (!isContext || !right)) notesFor(file, "old", left.no).forEach((n) => table.append(noteRow(n, colspan)));
+      if (right) notesFor(file, "new", right.no).forEach((n) => table.append(noteRow(n, colspan)));
+    }
+    return el("div", { class: "diff-wrap" }, table);
+  }
+
+  let mode = load("mode", window.innerWidth < 760 ? "unified" : "split");
+  const reviewed = new Set(load("reviewed", []));
+
+  function render() {
+    app.replaceChildren();
+    const files = data.files || [];
+    const plus = files.reduce((s, f) => s + (f.additions || 0), 0);
+    const minus = files.reduce((s, f) => s + (f.deletions || 0), 0);
+
+    // Header: what branch, against what, and why the change exists.
+    app.append(el("header", { class: "header" },
+      el("h1", {}, data.heading || data.branch),
+      el("div", { class: "refs" }, el("span", { class: "ref" }, data.branch), "compared with", el("span", { class: "ref" }, data.base), data.generatedAt ? `· generated ${data.generatedAt}` : ""),
+      el("div", { class: `goal ${data.plan && data.plan.found ? "" : "missing"}` },
+        el("span", { class: "label" }, data.plan && data.plan.found ? `Goal · ${data.plan.path}` : "No plan found"),
+        el("p", {}, data.plan && data.plan.found ? data.plan.goal : (data.plan && data.plan.goal) || "There is no docs/plans file for this branch. The workflow says every feature starts with an approved plan.")),
+      el("div", { class: "stats" },
+        el("span", {}, el("b", {}, files.length), " files"),
+        el("span", { class: "plus" }, `+${plus}`), el("span", { class: "minus" }, `−${minus}`),
+        el("span", {}, el("b", {}, data.testsAdded ?? 0), " tests added"),
+        el("span", {}, el("b", {}, (data.commits || []).length), " commits"))));
+
+    if (data.summary) app.append(el("section", {}, el("h2", {}, "In short"), el("p", { style: "max-width:80ch" }, data.summary)));
+
+    // Layers: count of changed files per architecture layer.
+    const byLayer = Object.fromEntries(LAYERS.map((l) => [l, files.filter((f) => f.layer === l)]));
+    app.append(el("section", {}, el("h2", {}, "Where the change lives"),
+      el("nav", { class: "layers", "aria-label": "Changed files by layer" },
+        LAYERS.filter((l) => byLayer[l].length > 0 || ["Domain", "Application", "Infrastructure", "Api", "Tests"].includes(l)).map((l) =>
+          el("a", { class: `layer ${byLayer[l].length ? "" : "empty"}`, href: byLayer[l].length ? `#file-${files.indexOf(byLayer[l][0])}` : undefined },
+            el("span", { class: "count" }, byLayer[l].length), el("span", { class: "name" }, l))))));
+
+    if ((data.checks || []).length) {
+      app.append(el("section", {}, el("h2", {}, "Rule checks"),
+        el("ul", { class: "checks" }, data.checks.map((c) =>
+          el("li", { class: "check" }, el("span", { class: `pill ${c.status}` }, { pass: "Pass", warn: "Check", fail: "Fail", na: "N/A" }[c.status] || c.status),
+            el("div", {}, el("div", {}, c.label), c.detail ? el("div", { class: "detail" }, c.detail) : null))))));
+    }
+
+    // Toolbar: review progress and diff layout.
+    const setMode = (m) => { mode = m; save("mode", m); render(); };
+    app.append(el("div", { class: "toolbar" },
+      el("span", { class: "progress" }, `${files.filter((f) => reviewed.has(f.path)).length} of ${files.length} files reviewed`),
+      el("div", { class: "seg", role: "group", "aria-label": "Diff layout" },
+        el("button", { type: "button", "aria-pressed": String(mode === "split"), onclick: () => setMode("split") }, "Side by side"),
+        el("button", { type: "button", "aria-pressed": String(mode === "unified"), onclick: () => setMode("unified") }, "Unified"))));
+
+    // One card per file.
+    app.append(el("section", { class: "files", "aria-label": "Changed files" }, files.map((f, i) => {
+      const isReviewed = reviewed.has(f.path);
+      const details = el("details", { class: `file ${isReviewed ? "reviewed" : ""}`, id: `file-${i}`, open: !f.generated && !isReviewed },
+        el("summary", {},
+          el("span", { class: "path" }, f.path),
+          el("span", { class: "meta" },
+            el("span", { class: `tag ${f.status}` }, f.status), f.uncommitted ? el("span", { class: "tag uncommitted" }, "uncommitted") : null,
+            el("span", { class: "tag" }, f.layer),
+            el("span", { style: "color:var(--add-fg)" }, `+${f.additions || 0}`), el("span", { style: "color:var(--del-fg)" }, `−${f.deletions || 0}`))),
+        el("div", { class: "file-body" },
+          el("div", { class: "why" }, el("span", { class: "label" }, "Why"), el("p", {}, f.why)),
+          el("label", { class: "reviewed-toggle" },
+            el("input", { type: "checkbox", id: `reviewed-${i}`, checked: isReviewed, onchange: (e) => { e.target.checked ? reviewed.add(f.path) : reviewed.delete(f.path); save("reviewed", [...reviewed]); render(); } }),
+            "Mark as reviewed"),
+          f.truncated ? el("div", { class: "truncated" }, f.truncated) : null,
+          renderDiff(f, mode)));
+      return details;
+    })));
+
+    if ((data.commits || []).length) {
+      app.append(el("section", {}, el("h2", {}, "Commits"),
+        el("ul", { class: "commits" }, data.commits.map((c) => el("li", {}, el("span", { class: "sha" }, c.sha), el("span", {}, c.message))))));
+    }
+    if ((data.toCheck || []).length) {
+      app.append(el("section", {}, el("h2", {}, "What to check before pushing"), el("ul", { class: "plain" }, data.toCheck.map((t) => el("li", {}, t)))));
+    }
+    app.append(el("footer", {}, "Generated by /review-changes. A reading aid only: nothing here commits or pushes."));
+  }
+
+  render();
+})();
+</script>
