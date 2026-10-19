@@ -1,0 +1,9 @@
+<!-- Implements the Application's interfaces: EF Core, repositories, integrations (LLM, email, ...). -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Jobly.Application\Jobly.Application.csproj" />
+    <ProjectReference Include="..\Jobly.Domain\Jobly.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
