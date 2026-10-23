@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Jobly.Infrastructure.Persistence;
 
-/// <summary>Stores jobs in SQL Server through EF Core. This is the real <see cref="IJobRepository"/>.</summary>
+/// <summary>Stores jobs in PostgreSQL through EF Core. This is the real <see cref="IJobRepository"/>.</summary>
 internal sealed class SqlJobRepository(JoblyDbContext dbContext) : IJobRepository
 {
     public async Task<IReadOnlyList<Job>> GetAll(ApplicationStatus? status, CancellationToken cancellationToken)

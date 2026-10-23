@@ -20,11 +20,11 @@ public sealed class JoblyApiFactory : WebApplicationFactory<Program>
     {
         // Program.cs requires a connection string at startup. This one is never used to connect,
         // because the repository that would use it is replaced below.
-        builder.UseSetting("ConnectionStrings:Jobly", "Server=not-used;Database=not-used");
+        builder.UseSetting("ConnectionStrings:Jobly", "Host=not-used;Database=not-used");
 
         builder.ConfigureServices(services =>
         {
-            // Remove the SQL Server repository and put the fake in its place. Singleton, so the test and the API share one instance.
+            // Remove the database repository and put the fake in its place. Singleton, so the test and the API share one instance.
             services.RemoveAll<IJobRepository>();
             services.AddSingleton<IJobRepository>(Jobs);
         });

@@ -33,10 +33,10 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 // Health checks: Docker and Azure call /health to know the app is alive.
 builder.Services.AddHealthChecks();
 
-// The database (EF Core + SQL Server) and the repositories that use it (see Jobly.Infrastructure/DependencyInjection.cs).
+// The database (EF Core + PostgreSQL) and the repositories that use it (see Jobly.Infrastructure/DependencyInjection.cs).
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// Scoped: one JobService per request. It asks for IJobRepository, which is the SQL Server one registered above.
+// Scoped: one JobService per request. It asks for IJobRepository, which is the PostgreSQL one registered above.
 builder.Services.AddScoped<IJobService, JobService>();
 
 builder.Services.AddAuthorization(options =>

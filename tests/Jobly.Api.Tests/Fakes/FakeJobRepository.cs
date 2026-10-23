@@ -3,7 +3,7 @@ using Jobly.Domain.Jobs;
 
 namespace Jobly.Api.Tests.Fakes;
 
-/// <summary>An in-memory <see cref="IJobRepository"/> so API tests run without SQL Server.</summary>
+/// <summary>An in-memory <see cref="IJobRepository"/> so API tests run without a database.</summary>
 public sealed class FakeJobRepository : IJobRepository
 {
     private readonly List<Job> jobs = [];

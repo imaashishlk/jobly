@@ -1,0 +1,25 @@
+<!-- Unit tests for the Infrastructure layer: database mapping, integrations, document reading. None of them need a real database or network. -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- xUnit v3 test projects are small console apps that run their own tests. -->
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Every test file can use [Fact], [Theory] and Assert without a using line. -->
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Jobly.Infrastructure\Jobly.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

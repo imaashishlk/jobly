@@ -27,11 +27,10 @@ internal sealed class JobConfiguration : IEntityTypeConfiguration<Job>
         // and reordering the enum later can't silently change what existing rows mean.
         builder.Property(job => job.Source).HasConversion<string>().HasMaxLength(30).IsRequired();
 
-        // Stops the same Arbeidsplassen ad being saved twice later. Filtered, because manual jobs have no ExternalId
-        // and SQL Server would otherwise treat all those NULLs as duplicates of each other.
+        // Stops the same Arbeidsplassen ad being saved twice later. No filter is needed: manual jobs have no ExternalId (NULL),
+        // and PostgreSQL treats every NULL in a unique index as different, so any number of manual jobs can exist.
         builder.HasIndex(job => new { job.Source, job.ExternalId })
-            .IsUnique()
-            .HasFilter("[ExternalId] IS NOT NULL");
+            .IsUnique();
 
         // One job has exactly one application. Deleting the job deletes its application too.
         // HasForeignKey also creates a unique index on JobApplications.JobId.

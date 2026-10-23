@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Jobly.Infrastructure.Persistence;
 
 /// <summary>
-/// The EF Core door to SQL Server. Each DbSet is a table.
+/// The EF Core door to PostgreSQL. Each DbSet is a table.
 /// </summary>
 public sealed class JoblyDbContext(DbContextOptions<JoblyDbContext> options) : DbContext(options)
 {

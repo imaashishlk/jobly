@@ -3,7 +3,7 @@ using Jobly.Domain.Jobs;
 namespace Jobly.Application.Jobs;
 
 /// <summary>
-/// What the Application layer needs from storage. Infrastructure implements it with SQL Server,
+/// What the Application layer needs from storage. Infrastructure implements it with PostgreSQL,
 /// and tests implement it with a fake, so <see cref="JobService"/> never knows which database is used.
 /// </summary>
 public interface IJobRepository

@@ -8,6 +8,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Jobly.Domain.Tests/Jobly.Domain.Tests.csproj" />
     <Project Path="tests/Jobly.Application.Tests/Jobly.Application.Tests.csproj" />
+    <Project Path="tests/Jobly.Infrastructure.Tests/Jobly.Infrastructure.Tests.csproj" />
     <Project Path="tests/Jobly.Api.Tests/Jobly.Api.Tests.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">

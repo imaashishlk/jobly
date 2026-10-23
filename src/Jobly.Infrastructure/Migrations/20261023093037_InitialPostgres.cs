@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Jobly.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialJobs : Migration
+    public partial class InitialPostgres : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,15 +15,15 @@ namespace Jobly.Infrastructure.Migrations
                 name: "Jobs",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Company = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Location = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(max)", maxLength: 20000, nullable: false),
-                    Url = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
-                    Source = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    ExternalId = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Company = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Location = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    Description = table.Column<string>(type: "character varying(20000)", maxLength: 20000, nullable: false),
+                    Url = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    Source = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    ExternalId = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -34,13 +34,13 @@ namespace Jobly.Infrastructure.Migrations
                 name: "JobApplications",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    JobId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    Notes = table.Column<string>(type: "nvarchar(max)", maxLength: 5000, nullable: true),
-                    AppliedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false),
-                    UpdatedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    JobId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    Notes = table.Column<string>(type: "character varying(5000)", maxLength: 5000, nullable: true),
+                    AppliedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -68,8 +68,7 @@ namespace Jobly.Infrastructure.Migrations
                 name: "IX_Jobs_Source_ExternalId",
                 table: "Jobs",
                 columns: new[] { "Source", "ExternalId" },
-                unique: true,
-                filter: "[ExternalId] IS NOT NULL");
+                unique: true);
         }
 
         /// <inheritdoc />

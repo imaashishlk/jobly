@@ -19,7 +19,7 @@ public static class DependencyInjection
             ?? throw new InvalidOperationException("The connection string 'ConnectionStrings:Jobly' is not configured.");
 
         // AddDbContext registers the context as scoped: one instance per HTTP request.
-        services.AddDbContext<JoblyDbContext>(options => options.UseSqlServer(connectionString));
+        services.AddDbContext<JoblyDbContext>(options => options.UseNpgsql(connectionString));
 
         // Scoped as well, because the repository uses the scoped DbContext.
         services.AddScoped<IJobRepository, SqlJobRepository>();
