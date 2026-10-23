@@ -1,4 +1,6 @@
+using Jobly.Domain.Cvs;
 using Jobly.Domain.Jobs;
+using Jobly.Domain.Matches;
 using Microsoft.EntityFrameworkCore;
 
 namespace Jobly.Infrastructure.Persistence;
@@ -11,6 +13,10 @@ public sealed class JoblyDbContext(DbContextOptions<JoblyDbContext> options) : D
     public DbSet<Job> Jobs => Set<Job>();
 
     public DbSet<JobApplication> JobApplications => Set<JobApplication>();
+
+    public DbSet<Cv> Cvs => Set<Cv>();
+
+    public DbSet<JobMatch> JobMatches => Set<JobMatch>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

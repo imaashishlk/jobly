@@ -22,6 +22,33 @@ namespace Jobly.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Jobly.Domain.Cvs.Cv", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(260)
+                        .HasColumnType("character varying(260)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(30000)
+                        .HasColumnType("character varying(30000)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Cvs", (string)null);
+                });
+
             modelBuilder.Entity("Jobly.Domain.Jobs.Job", b =>
                 {
                     b.Property<Guid>("Id")
@@ -106,11 +133,60 @@ namespace Jobly.Infrastructure.Migrations
                     b.ToTable("JobApplications", (string)null);
                 });
 
+            modelBuilder.Entity("Jobly.Domain.Matches.JobMatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Gaps")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("JobId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MatchingSkills")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JobId")
+                        .IsUnique();
+
+                    b.ToTable("JobMatches", (string)null);
+                });
+
             modelBuilder.Entity("Jobly.Domain.Jobs.JobApplication", b =>
                 {
                     b.HasOne("Jobly.Domain.Jobs.Job", null)
                         .WithOne("Application")
                         .HasForeignKey("Jobly.Domain.Jobs.JobApplication", "JobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Jobly.Domain.Matches.JobMatch", b =>
+                {
+                    b.HasOne("Jobly.Domain.Jobs.Job", null)
+                        .WithOne()
+                        .HasForeignKey("Jobly.Domain.Matches.JobMatch", "JobId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

@@ -1,4 +1,5 @@
 using Jobly.Domain.Jobs;
+using Jobly.Domain.Matches;
 using Jobly.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -45,6 +46,39 @@ public sealed class JoblyDbContextModelTests
         // Assert: square brackets and nvarchar are SQL Server syntax. A leftover (for example an index filter) would fail in PostgreSQL.
         Assert.DoesNotContain("[", script, StringComparison.Ordinal);
         Assert.DoesNotContain("nvarchar", script, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void GenerateCreateScript_CvAndMatchTables_ExistWithTheExpectedColumns()
+    {
+        // Arrange
+        using var context = CreateContext();
+
+        // Act
+        var script = context.Database.GenerateCreateScript();
+
+        // Assert: the CV text has a length limit, and the skill lists are stored as plain text (JSON).
+        Assert.Contains("CREATE TABLE \"Cvs\"", script, StringComparison.Ordinal);
+        Assert.Contains("CREATE TABLE \"JobMatches\"", script, StringComparison.Ordinal);
+        Assert.Contains("\"Text\" character varying(30000) NOT NULL", script, StringComparison.Ordinal);
+        Assert.Contains("\"MatchingSkills\" text NOT NULL", script, StringComparison.Ordinal);
+        Assert.Contains("\"Gaps\" text NOT NULL", script, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Model_JobMatchEntity_HasOneResultPerJobAndIsDeletedWithItsJob()
+    {
+        // Arrange
+        using var context = CreateContext();
+        var matchType = context.Model.FindEntityType(typeof(JobMatch))!;
+
+        // Act
+        var jobIdIndex = matchType.GetIndexes().Single(candidate => candidate.Properties.Single().Name == nameof(JobMatch.JobId));
+        var foreignKey = matchType.GetForeignKeys().Single(candidate => candidate.PrincipalEntityType.ClrType == typeof(Job));
+
+        // Assert: only the latest result per job is kept, and removing a job removes its result.
+        Assert.True(jobIdIndex.IsUnique);
+        Assert.Equal(DeleteBehavior.Cascade, foreignKey.DeleteBehavior);
     }
 
     [Fact]

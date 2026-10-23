@@ -15,6 +15,13 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.13" />
   </ItemGroup>
 
+  <ItemGroup Label="Documents">
+    <!-- Reads the text out of an uploaded PDF CV. The official package id is PdfPig (the older UglyToad.PdfPig id is abandoned). -->
+    <PackageVersion Include="PdfPig" Version="0.1.16" />
+    <!-- Microsoft's Open XML SDK: reads the text out of an uploaded DOCX CV. -->
+    <PackageVersion Include="DocumentFormat.OpenXml" Version="3.5.1" />
+  </ItemGroup>
+
   <ItemGroup Label="Testing">
     <!-- Runs the real API in memory for integration tests. Matches the installed ASP.NET Core runtime (10.0.12). -->
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />

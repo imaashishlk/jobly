@@ -1,4 +1,7 @@
+using Jobly.Application.Cvs;
 using Jobly.Application.Jobs;
+using Jobly.Application.Matches;
+using Jobly.Infrastructure.Documents;
 using Jobly.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -23,6 +26,11 @@ public static class DependencyInjection
 
         // Scoped as well, because the repository uses the scoped DbContext.
         services.AddScoped<IJobRepository, SqlJobRepository>();
+        services.AddScoped<ICvRepository, SqlCvRepository>();
+        services.AddScoped<IJobMatchRepository, SqlJobMatchRepository>();
+
+        // Reads CV files (PDF, DOCX). It keeps no state, so one shared instance is enough.
+        services.AddSingleton<ICvTextExtractor, CvTextExtractor>();
 
         return services;
     }

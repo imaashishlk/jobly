@@ -2,7 +2,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <PackageReference Include="DocumentFormat.OpenXml" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="PdfPig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The ASP.NET Core shared framework (already installed with .NET, nothing to download). It provides AddHttpClient
+      for typed HTTP clients and the options validation that integrations use. Domain and Application do not use it.
+    -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Lets the test project use classes marked `internal`, so they don't have to be public just for testing. -->
+    <InternalsVisibleTo Include="Jobly.Infrastructure.Tests" />
   </ItemGroup>
 
   <ItemGroup>
