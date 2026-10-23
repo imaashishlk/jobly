@@ -1,0 +1,164 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Jobly.Application.Integrations.Llm;
+using Jobly.Application.Matches;
+using Jobly.Domain.Common;
+using Jobly.Domain.Cvs;
+using Jobly.Domain.Jobs;
+
+namespace Jobly.Api.Tests.Endpoints;
+
+// A new in-memory API per test, so jobs, the CV and results from one test never reach another.
+public sealed class MatchEndpointsTests : IDisposable
+{
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new JsonStringEnumConverter() },
+    };
+
+    private static readonly DateTimeOffset Now = new(2026, 10, 23, 9, 0, 0, TimeSpan.Zero);
+
+    private readonly JoblyApiFactory factory = new();
+    private readonly HttpClient client;
+
+    public MatchEndpointsTests()
+    {
+        client = factory.CreateClient();
+    }
+
+    public void Dispose()
+    {
+        client.Dispose();
+        factory.Dispose();
+    }
+
+    [Fact]
+    public async Task PostMatch_JobAndCvExist_ReturnsOkWithScoreSkillsAndGaps()
+    {
+        // Arrange
+        var job = await AddJob();
+        factory.Cvs.Current = Cv.Create("Ola Nordmann, C# developer", CvSource.Pasted, null, Now).Value;
+
+        // Act
+        var response = await client.PostAsync($"/api/jobs/{job.Id}/match", content: null, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JobMatchResponse>(JsonOptions, TestContext.Current.CancellationToken);
+        Assert.Equal(72, body!.Score);
+        Assert.Equal(["C#", "SQL"], body.MatchingSkills);
+        Assert.Equal(["Kubernetes"], body.Gaps);
+        Assert.Single(factory.Matches.Matches);
+    }
+
+    [Fact]
+    public async Task PostMatch_NoCvYet_ReturnsConflictWithErrorCodeAndDoesNotCallTheModel()
+    {
+        // Arrange
+        var job = await AddJob();
+
+        // Act
+        var response = await client.PostAsync($"/api/jobs/{job.Id}/match", content: null, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal("Match.CvRequired", await ReadErrorCode(response));
+        Assert.Equal(0, factory.Llm.CallCount);
+    }
+
+    [Fact]
+    public async Task PostMatch_UnknownJob_ReturnsNotFound()
+    {
+        // Arrange
+        factory.Cvs.Current = Cv.Create("CV", CvSource.Pasted, null, Now).Value;
+
+        // Act
+        var response = await client.PostAsync($"/api/jobs/{Guid.NewGuid()}/match", content: null, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("Job.NotFound", await ReadErrorCode(response));
+    }
+
+    [Fact]
+    public async Task PostMatch_ModelIsDown_ReturnsServiceUnavailableWithMessageAndTraceId()
+    {
+        // Arrange: Ollama is not running.
+        var job = await AddJob();
+        factory.Cvs.Current = Cv.Create("CV", CvSource.Pasted, null, Now).Value;
+        factory.Llm.Result = Result.Failure<LlmResponse>(Error.Unavailable("Llm.Unavailable", "The language model cannot be reached. Is Ollama running?"));
+
+        // Act
+        var response = await client.PostAsync($"/api/jobs/{job.Id}/match", content: null, TestContext.Current.CancellationToken);
+
+        // Assert: 503 with a friendly message and a trace id for finding the logs.
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        Assert.Equal("Llm.Unavailable", problem.RootElement.GetProperty("errorCode").GetString());
+        Assert.Contains("Ollama", problem.RootElement.GetProperty("detail").GetString(), StringComparison.Ordinal);
+        Assert.True(problem.RootElement.TryGetProperty("traceId", out _));
+        Assert.Empty(factory.Matches.Matches);
+    }
+
+    [Fact]
+    public async Task PostMatch_ModelAnswersWithNonsense_ReturnsErrorWithInvalidResponseCode()
+    {
+        // Arrange
+        var job = await AddJob();
+        factory.Cvs.Current = Cv.Create("CV", CvSource.Pasted, null, Now).Value;
+        factory.Llm.AnswerWith("I think this is a great match!");
+
+        // Act
+        var response = await client.PostAsync($"/api/jobs/{job.Id}/match", content: null, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        Assert.Equal("Match.InvalidResponse", await ReadErrorCode(response));
+    }
+
+    [Fact]
+    public async Task GetMatch_JobWasAnalyzed_ReturnsTheSavedResult()
+    {
+        // Arrange
+        var job = await AddJob();
+        factory.Cvs.Current = Cv.Create("CV", CvSource.Pasted, null, Now).Value;
+        await client.PostAsync($"/api/jobs/{job.Id}/match", content: null, TestContext.Current.CancellationToken);
+
+        // Act
+        var response = await client.GetAsync($"/api/jobs/{job.Id}/match", TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JobMatchResponse>(JsonOptions, TestContext.Current.CancellationToken);
+        Assert.Equal(72, body!.Score);
+    }
+
+    [Fact]
+    public async Task GetMatch_JobNotAnalyzedYet_ReturnsNotFound()
+    {
+        // Arrange
+        var job = await AddJob();
+
+        // Act
+        var response = await client.GetAsync($"/api/jobs/{job.Id}/match", TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("Match.NotFound", await ReadErrorCode(response));
+    }
+
+    private async Task<Job> AddJob()
+    {
+        var job = Job.Create("Backend Developer", "Acme AS", null, "Build APIs in C#.", null, JobSource.Manual, null, Now).Value;
+        await factory.Jobs.Add(job, TestContext.Current.CancellationToken);
+        return job;
+    }
+
+    private static async Task<string?> ReadErrorCode(HttpResponseMessage response)
+    {
+        using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        return problem.RootElement.GetProperty("errorCode").GetString();
+    }
+}

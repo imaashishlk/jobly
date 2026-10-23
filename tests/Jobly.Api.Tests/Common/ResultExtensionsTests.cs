@@ -12,6 +12,7 @@ public sealed class ResultExtensionsTests
     [InlineData(ErrorType.NotFound, 404)]
     [InlineData(ErrorType.Conflict, 409)]
     [InlineData(ErrorType.Failure, 500)]
+    [InlineData(ErrorType.Unavailable, 503)]
     public void ToProblem_ErrorType_ReturnsMatchingStatusCode(ErrorType errorType, int expectedStatusCode)
     {
         // Arrange

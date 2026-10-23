@@ -36,6 +36,32 @@ public sealed class GlobalExceptionHandlerTests
     }
 
     [Fact]
+    public async Task TryHandleAsync_RequestTooLarge_Writes413WithAMessageAboutTheSize()
+    {
+        // Arrange: Kestrel throws this when an upload is bigger than the request size limit.
+        var services = new ServiceCollection().AddLogging().AddProblemDetails().BuildServiceProvider();
+        var httpContext = new DefaultHttpContext { RequestServices = services };
+        httpContext.Response.Body = new MemoryStream();
+        var handler = new GlobalExceptionHandler(
+            NullLogger<GlobalExceptionHandler>.Instance,
+            services.GetRequiredService<IProblemDetailsService>());
+        var exception = new BadHttpRequestException("Request body too large.", StatusCodes.Status413PayloadTooLarge);
+
+        // Act
+        var handled = await handler.TryHandleAsync(httpContext, exception, TestContext.Current.CancellationToken);
+
+        // Assert: keeps the status the framework chose (413), and tells the user what to do.
+        Assert.True(handled);
+        Assert.Equal(StatusCodes.Status413PayloadTooLarge, httpContext.Response.StatusCode);
+
+        httpContext.Response.Body.Position = 0;
+        var body = await new StreamReader(httpContext.Response.Body).ReadToEndAsync(TestContext.Current.CancellationToken);
+        using var json = JsonDocument.Parse(body);
+        Assert.Equal(413, json.RootElement.GetProperty("status").GetInt32());
+        Assert.Contains("too large", json.RootElement.GetProperty("detail").GetString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task TryHandleAsync_BadHttpRequest_Writes400ProblemInsteadOf500()
     {
         // Arrange: ASP.NET Core throws this when the caller sends something it can't read, for example ?status=Banana.

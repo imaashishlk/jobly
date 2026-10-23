@@ -1,8 +1,13 @@
 using System.Text.Json.Serialization;
 using Jobly.Api.Common;
+using Jobly.Api.Endpoints.Cvs;
 using Jobly.Api.Endpoints.Jobs;
+using Jobly.Api.Endpoints.Matches;
+using Jobly.Application.Cvs;
 using Jobly.Application.Jobs;
+using Jobly.Application.Matches;
 using Jobly.Infrastructure;
+using Jobly.Infrastructure.Integrations.Llm;
 using Microsoft.AspNetCore.Authorization;
 
 // ---------------------------------------------------------------------------------------------
@@ -36,8 +41,19 @@ builder.Services.AddHealthChecks();
 // The database (EF Core + PostgreSQL) and the repositories that use it (see Jobly.Infrastructure/DependencyInjection.cs).
 builder.Services.AddInfrastructure(builder.Configuration);
 
+// The language model (Ollama): ILlmClient, its settings from Integrations:Llm, and the typed HTTP client.
+builder.Services.AddLlmIntegration(builder.Configuration);
+
 // Scoped: one JobService per request. It asks for IJobRepository, which is the PostgreSQL one registered above.
 builder.Services.AddScoped<IJobService, JobService>();
+
+// The CV use cases, and the Match agent that compares the CV with a job using the language model.
+builder.Services.AddScoped<ICvService, CvService>();
+builder.Services.AddScoped<IMatchAgent, MatchAgent>();
+
+// No endpoint needs a request bigger than a 5 MB CV file plus the form's own overhead. Anything larger is refused
+// with 413 before it is read into memory. (Kestrel is the web server that runs inside the API.)
+builder.WebHost.ConfigureKestrel(kestrel => kestrel.Limits.MaxRequestBodySize = 6 * 1024 * 1024);
 
 builder.Services.AddAuthorization(options =>
 {
@@ -62,6 +78,8 @@ app.UseAuthorization();
 // --- Endpoints --------------------------------------------------------------------------------
 
 app.MapJobEndpoints();
+app.MapCvEndpoints();
+app.MapMatchEndpoints();
 
 app.MapHealthChecks("/health")
     .AllowAnonymous(); // Public on purpose: Docker and Azure must reach it without signing in. It only says "Healthy".

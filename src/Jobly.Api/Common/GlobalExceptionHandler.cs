@@ -14,19 +14,25 @@ internal sealed class GlobalExceptionHandler(
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
-        // ASP.NET Core throws this (in Development) when it can't read the request, for example ?status=Banana.
-        // That is the caller's mistake, not a bug of ours, so it becomes a 400 and not a 500.
-        if (exception is BadHttpRequestException)
+        // ASP.NET Core throws this (in Development) when it can't read the request, for example ?status=Banana,
+        // or when an upload is bigger than the size limit. That is the caller's mistake, not a bug of ours, so it keeps
+        // the status the framework chose (400, 413, ...) and does not become a 500.
+        if (exception is BadHttpRequestException badRequest)
         {
             // Warning, not Error: nothing is broken on our side. Shows how often callers send unreadable requests.
-            logger.LogWarning("Unreadable request for {Method} {Path}", httpContext.Request.Method, httpContext.Request.Path);
+            logger.LogWarning(
+                "Unreadable request for {Method} {Path} ({StatusCode})",
+                httpContext.Request.Method,
+                httpContext.Request.Path,
+                badRequest.StatusCode);
 
-            return await WriteProblem(
-                httpContext,
-                exception,
-                StatusCodes.Status400BadRequest,
-                "The request could not be read.",
-                "Check the values you sent, for example a status that does not exist.");
+            var (title, detail) = badRequest.StatusCode switch
+            {
+                StatusCodes.Status413PayloadTooLarge => ("The request is too large.", "The file or text you sent is too large."),
+                _ => ("The request could not be read.", "Check the values you sent, for example a status that does not exist."),
+            };
+
+            return await WriteProblem(httpContext, exception, badRequest.StatusCode, title, detail);
         }
 
         // Logged as Error with the full exception (stack trace included), plus method and path as searchable fields.

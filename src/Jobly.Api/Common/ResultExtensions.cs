@@ -23,6 +23,7 @@ internal static class ResultExtensions
             ErrorType.NotFound => StatusCodes.Status404NotFound,
             ErrorType.Conflict => StatusCodes.Status409Conflict,
             ErrorType.Failure => StatusCodes.Status500InternalServerError,
+            ErrorType.Unavailable => StatusCodes.Status503ServiceUnavailable,
         };
 
         // "detail" is the human-readable message. "errorCode" lets client code react to a specific error
