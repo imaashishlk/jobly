@@ -1,5 +1,14 @@
-<!-- The web entry point: Minimal API endpoints, validation, auth, and the composition root (Program.cs). -->
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<!-- The web entry point: Minimal API endpoints, validation, auth, and the composition root (Program.cs). -->
+<Project Sdk="Microsoft.NET.Sdk.Web"><PropertyGroup>  <UserSecretsId>e0f7e084-e4a9-4d71-bf26-840570126bf8</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Only for `dotnet ef` design-time work. PrivateAssets keeps it out of the published app. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Jobly.Application\Jobly.Application.csproj" />

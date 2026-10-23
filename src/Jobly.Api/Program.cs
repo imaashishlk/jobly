@@ -1,4 +1,8 @@
+using System.Text.Json.Serialization;
 using Jobly.Api.Common;
+using Jobly.Api.Endpoints.Jobs;
+using Jobly.Application.Jobs;
+using Jobly.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 
 // ---------------------------------------------------------------------------------------------
@@ -16,6 +20,10 @@ builder.Services.AddSingleton(TimeProvider.System);
 // Checks [Required], [MaxLength], ... on request DTOs before the endpoint runs, and returns 400 with the details.
 builder.Services.AddValidation();
 
+// Enums travel as text in JSON ("Applied", "Manual") instead of numbers, in both directions.
+// The client then never depends on the order of the enum values.
+builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
 // Every error response uses the standard ProblemDetails JSON shape, including a traceId for finding the logs.
 builder.Services.AddProblemDetails();
 
@@ -24,6 +32,12 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // Health checks: Docker and Azure call /health to know the app is alive.
 builder.Services.AddHealthChecks();
+
+// The database (EF Core + SQL Server) and the repositories that use it (see Jobly.Infrastructure/DependencyInjection.cs).
+builder.Services.AddInfrastructure(builder.Configuration);
+
+// Scoped: one JobService per request. It asks for IJobRepository, which is the SQL Server one registered above.
+builder.Services.AddScoped<IJobService, JobService>();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -46,6 +60,8 @@ app.UseStatusCodePages();
 app.UseAuthorization();
 
 // --- Endpoints --------------------------------------------------------------------------------
+
+app.MapJobEndpoints();
 
 app.MapHealthChecks("/health")
     .AllowAnonymous(); // Public on purpose: Docker and Azure must reach it without signing in. It only says "Healthy".

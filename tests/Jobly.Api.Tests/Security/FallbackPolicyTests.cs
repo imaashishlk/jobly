@@ -1,12 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Jobly.Api.Tests.Security;
 
-public sealed class FallbackPolicyTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+public sealed class FallbackPolicyTests(JoblyApiFactory factory) : IClassFixture<JoblyApiFactory>
 {
     [Fact]
     public void FallbackPolicy_AppStarted_RequiresAuthenticatedUser()
