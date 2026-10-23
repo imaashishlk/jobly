@@ -23,6 +23,14 @@ services:
       # "__" becomes ":" in .NET configuration, so this is the setting ConnectionStrings:Jobly.
       # The value comes from docker/.env. ":?" stops compose with this message if it is missing.
       ConnectionStrings__Jobly: "${JOBLY_CONNECTION_STRING:?Set JOBLY_CONNECTION_STRING in docker/.env (copy docker/.env.example)}"
+      # The language model (Ollama) runs on your machine, not in Docker: Docker Desktop on Windows cannot use the GPU easily,
+      # and a model on a CPU inside a container is much slower. "host.docker.internal" is how a container reaches your machine.
+      Integrations__Llm__BaseUrl: "${JOBLY_LLM_BASE_URL:-http://host.docker.internal:11434}"
+      Integrations__Llm__ChatModel: "${JOBLY_LLM_CHAT_MODEL:-qwen2.5:7b}"
+      Integrations__Llm__EmbeddingModel: "${JOBLY_LLM_EMBEDDING_MODEL:-bge-m3}"
+    extra_hosts:
+      # Makes "host.docker.internal" work on Linux too (Docker Desktop on Windows and Mac already has it).
+      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         # Start the API only after PostgreSQL accepts connections (see the healthcheck below), so it never starts against a database that isn't ready.
