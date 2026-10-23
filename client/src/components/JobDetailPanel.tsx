@@ -1,20 +1,40 @@
 import { useEffect, useState } from "react";
 import { labelOf } from "../statuses";
-import type { Job } from "../types";
+import type { Job, JobMatch } from "../types";
+import MatchSection from "./MatchSection";
 
 interface JobDetailPanelProps {
   job: Job;
+  /** The latest result of the Match agent for this job, or null if it has not been analyzed yet. */
+  match: JobMatch | null;
+  analyzing: boolean;
+  matchError: string | null;
+  hasCv: boolean | null;
   onClose: () => void;
   onEdit: () => void;
   onSaveNotes: (notes: string) => Promise<void>;
   onDelete: () => Promise<void>;
+  onAnalyze: () => void;
+  onOpenCv: () => void;
 }
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
 
-export default function JobDetailPanel({ job, onClose, onEdit, onSaveNotes, onDelete }: JobDetailPanelProps) {
+export default function JobDetailPanel({
+  job,
+  match,
+  analyzing,
+  matchError,
+  hasCv,
+  onClose,
+  onEdit,
+  onSaveNotes,
+  onDelete,
+  onAnalyze,
+  onOpenCv,
+}: JobDetailPanelProps) {
   const [notes, setNotes] = useState(job.notes ?? "");
   const [savingNotes, setSavingNotes] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -27,7 +47,8 @@ export default function JobDetailPanel({ job, onClose, onEdit, onSaveNotes, onDe
 
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      // A dialog on top (the CV or the edit form) uses Escape to close itself. The panel stays open then.
+      if (event.key === "Escape" && !document.querySelector("dialog[open]")) onClose();
     }
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
@@ -83,6 +104,8 @@ export default function JobDetailPanel({ job, onClose, onEdit, onSaveNotes, onDe
               </>
             )}
           </dl>
+
+          <MatchSection match={match} analyzing={analyzing} error={matchError} hasCv={hasCv} onAnalyze={onAnalyze} onOpenCv={onOpenCv} />
 
           <h3>Your notes</h3>
           <textarea

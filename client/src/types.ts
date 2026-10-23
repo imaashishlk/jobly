@@ -26,6 +26,27 @@ export interface Job {
   updatedAt: string;
 }
 
+/** The user's CV as plain text. There is one for the whole app. */
+export interface Cv {
+  id: string;
+  text: string;
+  fileName: string | null;
+  source: "Uploaded" | "Pasted";
+  characterCount: number;
+  updatedAt: string;
+}
+
+/** What the Match agent found out about one job. */
+export interface JobMatch {
+  jobId: string;
+  score: number;
+  summary: string;
+  matchingSkills: string[];
+  gaps: string[];
+  model: string;
+  createdAt: string;
+}
+
 /** The fields the user types into the add/edit form. */
 export interface JobInput {
   title: string;

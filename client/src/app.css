@@ -506,6 +506,229 @@ textarea {
   from { transform: translateY(8px); opacity: 0; }
 }
 
+/* ---------- CV dialog ---------- */
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dialog-wide {
+  width: min(760px, calc(100vw - 32px));
+}
+
+.dialog-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cv-meta {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 18px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.dropzone[data-over="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.cv-count {
+  margin: -8px 0 0;
+  text-align: right;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.cv-count[data-over-limit="true"] {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.dialog-actions-spread {
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dialog-actions-right {
+  display: inline-flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* ---------- Match section (job panel) ---------- */
+
+.match {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+}
+
+.match h3 {
+  margin: 0;
+}
+
+.match h4 {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.match p {
+  margin: 0;
+}
+
+.match .button {
+  justify-self: start;
+}
+
+.match-hint,
+.match-meta {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.link-button {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--accent-hover);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.match-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.92rem;
+}
+
+.spinner {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
+
+.match-result {
+  display: grid;
+  gap: 8px;
+}
+
+.match-result[data-level="high"] { --level: var(--status-offer); }
+.match-result[data-level="medium"] { --level: var(--status-interview); }
+.match-result[data-level="low"] { --level: var(--status-rejected); }
+
+.score {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+
+.score-number {
+  font-family: var(--font-heading);
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--level);
+  line-height: 1;
+}
+
+.score-out-of {
+  color: var(--text-muted);
+}
+
+.score-bar {
+  flex-basis: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.score-fill {
+  height: 100%;
+  background: var(--level);
+  border-radius: 999px;
+  transition: width 400ms ease;
+}
+
+.match-summary {
+  line-height: 1.5;
+}
+
+.chips,
+.gap-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chips li {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  background: color-mix(in srgb, var(--status-offer) 16%, transparent);
+}
+
+.gap-list {
+  display: grid;
+  gap: 4px;
+}
+
+.gap-list li {
+  padding-left: 18px;
+  position: relative;
+  font-size: 0.92rem;
+}
+
+.gap-list li::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 0.55em;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--status-rejected);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ---------- Small screens ---------- */
 
 @media (max-width: 600px) {

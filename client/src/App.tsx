@@ -1,20 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api, ApiError } from "./api";
+import { api, errorMessage } from "./api";
 import Column from "./components/Column";
+import CvDialog from "./components/CvDialog";
 import JobDetailPanel from "./components/JobDetailPanel";
 import JobFormDialog from "./components/JobFormDialog";
 import Toasts, { type Toast } from "./components/Toasts";
 import { canMove, labelOf, STATUSES } from "./statuses";
-import type { ApplicationStatus, Job, JobInput } from "./types";
+import type { ApplicationStatus, Cv, Job, JobInput, JobMatch } from "./types";
 
 // The form is closed (null), adding a new job, or editing an existing one.
 type FormState = { mode: "create" } | { mode: "edit"; job: Job } | null;
 
 let nextToastId = 1;
-
-function messageOf(error: unknown): string {
-  return error instanceof ApiError ? error.message : "Something went wrong. Please try again.";
-}
 
 export default function App() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -24,6 +21,13 @@ export default function App() {
   const [form, setForm] = useState<FormState>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
+
+  // The CV and the Match agent. hasCv is null until the first check finishes.
+  const [cvOpen, setCvOpen] = useState(false);
+  const [hasCv, setHasCv] = useState<boolean | null>(null);
+  const [matches, setMatches] = useState<Record<string, JobMatch>>({});
+  const [analyzingIds, setAnalyzingIds] = useState<ReadonlySet<string>>(new Set());
+  const [matchErrors, setMatchErrors] = useState<Record<string, string>>({});
 
   const notify = useCallback((kind: Toast["kind"], text: string) => {
     const id = nextToastId++;
@@ -38,7 +42,7 @@ export default function App() {
     try {
       setJobs(await api.listJobs());
     } catch (error) {
-      setLoadError(messageOf(error));
+      setLoadError(errorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -47,6 +51,29 @@ export default function App() {
   useEffect(() => {
     void loadJobs();
   }, [loadJobs]);
+
+  // Does a CV exist? The Match section and the header button depend on it.
+  useEffect(() => {
+    api
+      .getCv()
+      .then((cv) => setHasCv(cv !== null))
+      .catch(() => setHasCv(null)); // Unknown: the buttons stay usable and the API answers if there is no CV.
+  }, []);
+
+  // When a job is opened, load its saved match result (if the job was analyzed before).
+  useEffect(() => {
+    if (!selectedId || matches[selectedId]) return;
+    let cancelled = false;
+    api
+      .getMatch(selectedId)
+      .then((match) => {
+        if (match && !cancelled) setMatches((current) => ({ ...current, [match.jobId]: match }));
+      })
+      .catch(() => undefined); // Not being able to load an old result is not worth an error message.
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId, matches]);
 
   const replaceJob = useCallback((job: Job) => {
     setJobs((current) => current.map((existing) => (existing.id === job.id ? job : existing)));
@@ -75,7 +102,7 @@ export default function App() {
       notify("success", `Moved to ${labelOf(target)}.`);
     } catch (error) {
       replaceJob(job);
-      notify("error", messageOf(error));
+      notify("error", errorMessage(error));
     }
   }
 
@@ -98,7 +125,7 @@ export default function App() {
       setForm(null);
       return null;
     } catch (error) {
-      return messageOf(error);
+      return errorMessage(error);
     }
   }
 
@@ -107,8 +134,37 @@ export default function App() {
       replaceJob(await api.updateNotes(job.id, notes));
       notify("success", "Notes saved.");
     } catch (error) {
-      notify("error", messageOf(error));
+      notify("error", errorMessage(error));
     }
+  }
+
+  // Asks the language model about one job. It runs in the background of the page: closing the panel does not stop it,
+  // and the result is saved by the API, so it is there the next time the job is opened.
+  async function analyzeJob(job: Job) {
+    setAnalyzingIds((current) => new Set(current).add(job.id));
+    setMatchErrors((current) => ({ ...current, [job.id]: "" }));
+    try {
+      const match = await api.analyzeJob(job.id);
+      setMatches((current) => ({ ...current, [job.id]: match }));
+      notify("success", `Analysis of "${job.title}" finished: ${match.score} / 100.`);
+    } catch (error) {
+      const message = errorMessage(error);
+      setMatchErrors((current) => ({ ...current, [job.id]: message }));
+      notify("error", message);
+    } finally {
+      setAnalyzingIds((current) => {
+        const next = new Set(current);
+        next.delete(job.id);
+        return next;
+      });
+    }
+  }
+
+  function handleCvChanged(cv: Cv | null) {
+    setHasCv(cv !== null);
+
+    // Old results were made with the old CV, so they no longer describe this CV.
+    setMatches({});
   }
 
   async function deleteJob(job: Job) {
@@ -118,7 +174,7 @@ export default function App() {
       setSelectedId(null);
       notify("success", "Job deleted.");
     } catch (error) {
-      notify("error", messageOf(error));
+      notify("error", errorMessage(error));
     }
   }
 
@@ -129,9 +185,14 @@ export default function App() {
           <h1>Jobly</h1>
           <p className="tagline">Track every application from first look to final answer.</p>
         </div>
-        <button className="button button-primary" onClick={() => setForm({ mode: "create" })}>
-          + Add job
-        </button>
+        <div className="header-actions">
+          <button className="button" onClick={() => setCvOpen(true)}>
+            {hasCv === false ? "Add CV" : "My CV"}
+          </button>
+          <button className="button button-primary" onClick={() => setForm({ mode: "create" })}>
+            + Add job
+          </button>
+        </div>
       </header>
 
       {loadError ? (
@@ -169,10 +230,16 @@ export default function App() {
       {selectedJob && (
         <JobDetailPanel
           job={selectedJob}
+          match={matches[selectedJob.id] ?? null}
+          analyzing={analyzingIds.has(selectedJob.id)}
+          matchError={matchErrors[selectedJob.id] || null}
+          hasCv={hasCv}
           onClose={() => setSelectedId(null)}
           onEdit={() => setForm({ mode: "edit", job: selectedJob })}
           onSaveNotes={(notes) => saveNotes(selectedJob, notes)}
           onDelete={() => deleteJob(selectedJob)}
+          onAnalyze={() => void analyzeJob(selectedJob)}
+          onOpenCv={() => setCvOpen(true)}
         />
       )}
 
@@ -184,6 +251,8 @@ export default function App() {
           onCancel={() => setForm(null)}
         />
       )}
+
+      {cvOpen && <CvDialog onClose={() => setCvOpen(false)} onChanged={handleCvChanged} onNotify={notify} />}
 
       <Toasts toasts={toasts} />
     </div>
