@@ -20,9 +20,25 @@ services:
       - "127.0.0.1:${JOBLY_API_PORT:-48217}:8080" # your machine : container
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      # "__" becomes ":" in .NET configuration, so this is the setting ConnectionStrings:Jobly.
+      # The value comes from docker/.env. ":?" stops compose with this message if it is missing.
+      ConnectionStrings__Jobly: "${JOBLY_CONNECTION_STRING:?Set JOBLY_CONNECTION_STRING in docker/.env (copy docker/.env.example)}"
+    depends_on:
+      sqlserver:
+        # Start the API only after SQL Server answers queries (see the healthcheck below), so it never starts against a database that isn't ready.
+        condition: service_healthy
+
+  client:
+    build:
+      context: ..                       # The repository root, so the Dockerfile can copy client/.
+      dockerfile: docker/client/Dockerfile
+    ports:
+      - "127.0.0.1:${JOBLY_CLIENT_PORT:-48251}:8080" # Open http://127.0.0.1:48251 in the browser.
+    depends_on:
+      - api                             # nginx passes /api requests to the api service (see docker/client/nginx.conf).
 
   sqlserver:
-    # Pinned version, so every machine runs the same SQL Server. Not used by the code yet; ready for the first feature with data.
+    # Pinned version, so every machine runs the same SQL Server.
     image: mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04
     ports:
       - "127.0.0.1:${JOBLY_SQL_PORT:-48233}:1433"   # Only your machine can connect (for example from VS Code or SSMS).
