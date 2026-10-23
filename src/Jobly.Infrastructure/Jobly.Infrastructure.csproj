@@ -2,6 +2,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Jobly.Application\Jobly.Application.csproj" />
     <ProjectReference Include="..\Jobly.Domain\Jobly.Domain.csproj" />
   </ItemGroup>
