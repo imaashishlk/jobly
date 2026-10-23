@@ -86,7 +86,7 @@ Every rule states its **Why**. Keep it that way when adding rules.
 The most important ones:
 
 - Plan in `docs/plans/<feature-name>.md` and wait for approval before coding.
-- Every file change, non-read-only command, network access, and SQL access needs approval. Deleting is never allowed.
+- Once a plan is approved, files for that feature are created and edited inside the project without asking per file. Non-read-only commands, network access, SQL access, packages, and guardrail changes still need approval. Deleting is never allowed.
 - Every route group declares its access (`.RequireAuthorization()`), endpoints override only where they differ, and the fallback policy closes anything unmarked.
 - A task is done only when `dotnet build` and `dotnet test` pass.
 - Explain every change, and comment anything that could confuse a junior developer.

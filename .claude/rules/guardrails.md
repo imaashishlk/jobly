@@ -33,7 +33,6 @@ There are three levels of enforcement:
 
 | Action | Why | Enforced by |
 |---|---|---|
-| **Every file creation or edit** | You review every change as it happens. | Hook |
 | **Every command not on the read-only list** (for example `mkdir`, `dotnet new`, `New-Item`, writing output to a file, running scripts) | Anything that might change something is your call. | Hook |
 | **Network access**: `curl`, `Invoke-WebRequest`, `git pull/fetch/clone/push`, `dotnet restore`, `npm install`, WebFetch, WebSearch | Data could leave your machine, and downloaded code could run. You decide when that's acceptable. | Hook + Permission |
 | **SQL Server access**: `sqlcmd`, `Invoke-Sqlcmd`, `bcp`, `sqlpackage`, `dotnet ef` | Database changes can't be undone the way file changes can. | Hook + Permission |
@@ -53,6 +52,7 @@ These are read-only, or are commands you explicitly allowed:
 - Read-only commands: `ls`, `cat`, `grep`, `Get-ChildItem`, `Get-Content`, `git status`, `git log`, `git diff`, `git show`, listing branches
 - `node .claude/hooks/test-guards.js`
 - Reading project files
+- **Creating and editing files inside the project**, once you have approved the plan for the feature. You review the plan and the `/review-changes` page instead of every single file. The hook still denies or asks for anything on the lists above (outside the project, migrations, secrets, skipped tests, packages, removed tests, guardrail files).
 
 `dotnet format` rewrites code formatting and `dotnet build` writes `bin/` and `obj/`. They are allowed because you listed them as freely usable.
 
@@ -62,7 +62,7 @@ These can't be reliably checked by a script, so the AI is expected to follow the
 
 | Rule | Why |
 |---|---|
-| Don't change files unrelated to the current task. | Small, focused changes are easy to review and easy to revert. |
+| Only create or edit files that belong to the approved plan of the current feature. The hook cannot tell which files those are. | Approving a plan replaces approving each file, so the plan's scope is the limit. Small, focused changes are easy to review and easy to revert. |
 | Plan in `docs/plans/<feature-name>.md` and get approval before writing code. | Agreeing on the design first is cheaper than rewriting code. |
 | Never weaken a failing test to make it pass. | The test exists to catch exactly that failure. |
 | When unsure, ask instead of guessing. | A wrong guess costs more time than a question. |

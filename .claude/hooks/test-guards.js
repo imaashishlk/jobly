@@ -83,21 +83,21 @@ const cases = [
   [shellHook, shell("npm install"), "ask"],
   [shellHook, shell("dotnet ef migrations add InitialCreate --project src/Jobly.Infrastructure"), "ask"],
 
-  // Files: every ordinary change needs approval
-  [filesHook, write("src/Jobly.Domain/Job.cs", "public sealed class Job {}"), "ask"],
-  [filesHook, write("docs/plans/job-search.md", "# Job search"), "ask"],
-  [filesHook, write("src/Jobly.Application/Login.cs", "Password = request.Password;"), "ask"],
-  [filesHook, write("src/Jobly.Api/appsettings.json", '{"C":"Server=.;Database=Jobly;Trusted_Connection=True"}'), "ask"],
+  // Files: an ordinary change inside the project is allowed without asking
+  [filesHook, write("src/Jobly.Domain/Job.cs", "public sealed class Job {}"), "allow"],
+  [filesHook, write("docs/plans/job-search.md", "# Job search"), "allow"],
+  [filesHook, write("src/Jobly.Application/Login.cs", "Password = request.Password;"), "allow"],
+  [filesHook, write("src/Jobly.Api/appsettings.json", '{"C":"Server=.;Database=Jobly;Trusted_Connection=True"}'), "allow"],
   // Files: denied
   [filesHook, write("C:\\temp\\outside.cs", "x"), "deny"],
   [filesHook, write("../outside.cs", "x"), "deny"],
   [filesHook, write(".env", "KEY=1"), "deny"],
   [filesHook, write("docker/.env.local", "KEY=1"), "deny"],
-  [filesHook, write("docker/.env.example", "KEY=change-me"), "ask"],
+  [filesHook, write("docker/.env.example", "KEY=change-me"), "allow"],
   [filesHook, write("src/Jobly.Api/appsettings.json", fakePasswordConnection), "deny"],
   [filesHook, write("tests/Jobly.Application.Tests/JobServiceTests.cs", '[Fact(Skip = "later")] public void A() {}'), "deny"],
   // Files: need approval
-  [filesHook, write("src/Jobly.Api/Jobly.Api.csproj", '<Project><ItemGroup><PackageReference Include="Moq" /></ItemGroup></Project>'), "ask"],
+  [filesHook, write("src/Jobly.Api/Jobly.Api.csproj", '<Project><ItemGroup><PackageReference Include="Moq" /><PackageReference Include="Another" /></ItemGroup></Project>'), "ask"],
   [filesHook, write("client/package.json", '{"dependencies":{"axios":"1.7.0"}}'), "ask"],
   [filesHook, edit(".claude/settings.json", '"hooks"', '"hooks"'), "ask"],
 ];
