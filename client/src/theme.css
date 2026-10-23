@@ -1,0 +1,68 @@
+/*
+  Design tokens: every color, font and radius lives here as a CSS variable, and the rest of the CSS only uses
+  these names. To change the look of the whole app, change this file.
+  The palette is warm (cream paper, near-black ink, terracotta accent), inspired by the colors of Claude's website.
+*/
+
+:root {
+  /* Light theme */
+  --bg: #faf9f5;
+  --surface: #ffffff;
+  --surface-muted: #f3f1e9;
+  --border: #e8e6dc;
+  --text: #141413;
+  --text-muted: #6b6a63;
+  --accent: #d97757;
+  --accent-hover: #c15f3c;
+  --accent-contrast: #ffffff;
+  --danger: #b3412f;
+  --success: #4c7a52;
+  --shadow: 0 1px 2px rgb(20 20 19 / 6%), 0 4px 12px rgb(20 20 19 / 6%);
+  --shadow-lift: 0 2px 4px rgb(20 20 19 / 8%), 0 10px 24px rgb(20 20 19 / 12%);
+
+  /* One calm color per column. */
+  --status-saved: #8a877d;
+  --status-planning: #6f8fa3;
+  --status-applied: #d97757;
+  --status-interview: #c9952f;
+  --status-offer: #5e9166;
+  --status-rejected: #c4604f;
+  --status-withdrawn: #a9a699;
+  --status-ghosted: #8e7ca8;
+
+  --font-heading: ui-serif, Georgia, "Times New Roman", serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --radius: 12px;
+  --radius-small: 8px;
+  --transition: 160ms ease;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1f1e1d;
+    --surface: #2b2a28;
+    --surface-muted: #262523;
+    --border: #3d3b37;
+    --text: #f0eee6;
+    --text-muted: #a8a59b;
+    --accent: #d97757;
+    --accent-hover: #e58968;
+    --danger: #e07a66;
+    --success: #7fb287;
+    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 12px rgb(0 0 0 / 25%);
+    --shadow-lift: 0 2px 4px rgb(0 0 0 / 35%), 0 10px 24px rgb(0 0 0 / 40%);
+  }
+}
+
+/* The status color is set once per element with data-status, and everything inside reads var(--status). */
+[data-status="Saved"] { --status: var(--status-saved); }
+[data-status="PlanningToApply"] { --status: var(--status-planning); }
+[data-status="Applied"] { --status: var(--status-applied); }
+[data-status="Interview"] { --status: var(--status-interview); }
+[data-status="Offer"] { --status: var(--status-offer); }
+[data-status="Rejected"] { --status: var(--status-rejected); }
+[data-status="Withdrawn"] { --status: var(--status-withdrawn); }
+[data-status="Ghosted"] { --status: var(--status-ghosted); }
