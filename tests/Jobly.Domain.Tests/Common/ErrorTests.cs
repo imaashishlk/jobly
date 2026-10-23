@@ -47,6 +47,12 @@ public sealed class ErrorTests
     }
 
     [Fact]
+    public void Unavailable_WithCodeAndMessage_HasUnavailableType()
+    {
+        Assert.Equal(ErrorType.Unavailable, Error.Unavailable("Code", "Message").Type);
+    }
+
+    [Fact]
     public void Equality_SameCodeMessageAndType_AreEqual()
     {
         // Records compare by value, so two errors with the same content are equal (useful in tests and checks).

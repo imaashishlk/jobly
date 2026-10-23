@@ -23,4 +23,7 @@ public enum ErrorType
 
     /// <summary>The caller is signed in but not allowed, for example not the owner (maps to 403).</summary>
     Forbidden,
+
+    /// <summary>An outside service we depend on is down or too slow, for example the LLM (maps to 503).</summary>
+    Unavailable,
 }
