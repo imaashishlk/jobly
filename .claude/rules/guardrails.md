@@ -35,7 +35,7 @@ There are three levels of enforcement:
 |---|---|---|
 | **Every command not on the read-only list** (for example `mkdir`, `dotnet new`, `New-Item`, writing output to a file, running scripts) | Anything that might change something is your call. | Hook |
 | **Network access**: `curl`, `Invoke-WebRequest`, `git pull/fetch/clone/push`, `dotnet restore`, `npm install`, WebFetch, WebSearch | Data could leave your machine, and downloaded code could run. You decide when that's acceptable. | Hook + Permission |
-| **SQL Server access**: `sqlcmd`, `Invoke-Sqlcmd`, `bcp`, `sqlpackage`, `dotnet ef` | Database changes can't be undone the way file changes can. | Hook + Permission |
+| **Database access**: `psql`, `pg_dump`, `pg_restore`, `createdb`, `dropdb` (and the old SQL Server tools `sqlcmd`, `Invoke-Sqlcmd`, `bcp`, `sqlpackage`), `dotnet ef` | Database changes can't be undone the way file changes can. | Hook + Permission |
 | `git commit`, `git merge`, `git rebase`, creating branches | You own the project history. | Hook + Permission |
 | Adding or removing NuGet or npm packages | Every package is outside code we take responsibility for. | Hook + Permission |
 | `dotnet user-secrets` | Secrets are yours to manage. | Hook + Permission |

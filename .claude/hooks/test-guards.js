@@ -57,6 +57,9 @@ const cases = [
   // Shell: SQL needs approval
   [shellHook, shell("sqlcmd -S localhost -Q \"SELECT 1\""), "ask"],
   [shellHook, shell("Invoke-Sqlcmd -Query \"SELECT 1\""), "ask"],
+  [shellHook, shell("psql -h 127.0.0.1 -p 48233 -U jobly -d jobly -c \"SELECT 1\""), "ask"],
+  [shellHook, shell("pg_dump -h 127.0.0.1 -U jobly jobly"), "ask"],
+  [shellHook, shell("dropdb -h 127.0.0.1 -U jobly jobly"), "ask"],
   // Shell: deleting
   [shellHook, shell("rm -rf src"), "deny"],
   [shellHook, shell("dotnet build && rm notes.txt"), "deny"],

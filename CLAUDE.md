@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Jobly is an ASP.NET Core Web API (.NET 10) with a React front end. SQL Server is accessed through Entity Framework Core, backend tests use xUnit, and it ships with Docker, GitHub Actions, and Azure App Service.
+Jobly is an ASP.NET Core Web API (.NET 10) with a React front end. PostgreSQL (with the pgvector extension for vectors) is accessed through Entity Framework Core, backend tests use xUnit, and it ships with Docker, GitHub Actions, and Azure App Service.
 
-Docker Compose is the main way to run the app locally (API, client, SQL Server, dashboard). `dotnet build` and `dotnet test` run directly on the host for fast TDD feedback.
+Docker Compose is the main way to run the app locally (API, client, PostgreSQL, dashboard). `dotnet build` and `dotnet test` run directly on the host for fast TDD feedback.
 
 The repository is at an early stage. The layout below is the agreed target. Where it differs from what's on disk, follow the target and say so.
 
@@ -20,7 +20,7 @@ src/
   Jobly.Infrastructure/  EF Core DbContext, migrations, repositories, integration implementations (Integrations/<Name>/). References Application and Domain.
   Jobly.Api/             Minimal API endpoints (Endpoints/<Feature>/), validation, Result→HTTP mapping, auth, observability, DI composition root.
 client/                  React front end
-docker/                  docker-compose.yml plus one folder per service (api/, client/, sqlserver/, observability/)
+docker/                  docker-compose.yml plus one folder per service (api/, client/, postgres/, observability/)
 tests/
   Jobly.Domain.Tests/
   Jobly.Application.Tests/   Unit tests for every service method

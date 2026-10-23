@@ -39,7 +39,8 @@ const networkPrograms = [
   "curl", "wget", "invoke-webrequest", "iwr", "invoke-restmethod", "irm", "ssh", "scp", "sftp",
   "ftp", "telnet", "nc", "ncat", "start-bitstransfer", "certutil", "bitsadmin", "ping", "nslookup",
 ];
-const sqlPrograms = ["sqlcmd", "osql", "bcp", "invoke-sqlcmd", "sqlpackage"];
+// Database command-line tools: PostgreSQL's (psql and friends) and the old SQL Server ones.
+const sqlPrograms = ["psql", "pg_dump", "pg_restore", "createdb", "dropdb", "sqlcmd", "osql", "bcp", "invoke-sqlcmd", "sqlpackage"];
 
 // Programs that only read or display things.
 const readOnlyPrograms = [
@@ -134,7 +135,7 @@ for (const segment of splitIntoSegments(command)) {
       askReasons.push(`This uses the network and needs your approval (\`${program}\`).`);
       break;
     case sqlPrograms.includes(program):
-      askReasons.push(`This accesses SQL Server and needs your approval (\`${program}\`).`);
+      askReasons.push(`This accesses the database and needs your approval (\`${program}\`).`);
       break;
     case isSafeSegment(words):
       break;

@@ -2,8 +2,8 @@
 
 ## Docker is the main way to develop
 
-The API, the React client, SQL Server, and the observability dashboard run together with Docker Compose. `dotnet build` and `dotnet test` still run directly on your machine (.NET 10 SDK), because that's the fastest feedback loop for TDD.
-**Why:** Everyone gets the same SQL Server version and setup with no local install. The way it runs locally matches the container that runs in Azure.
+The API, the React client, PostgreSQL, and the observability dashboard run together with Docker Compose. `dotnet build` and `dotnet test` still run directly on your machine (.NET 10 SDK), because that's the fastest feedback loop for TDD.
+**Why:** Everyone gets the same PostgreSQL version (with the pgvector extension) and setup with no local install. The way it runs locally matches the container that runs in Azure.
 
 **Runs without asking**, and only with our compose file:
 
@@ -27,8 +27,8 @@ docker/
   client/
     Dockerfile                  Builds the React app and serves it
     nginx.conf                  Web server configuration for the client
-  sqlserver/
-    (init scripts, if needed)   SQL Server setup for local development
+  postgres/
+    (init scripts, if needed)   PostgreSQL setup for local development
   observability/
     (dashboard config)          Local dashboard for logs and traces (see logging.md)
 .dockerignore                   At the repository root, because the build context is the root
@@ -51,7 +51,7 @@ docker compose -f docker/docker-compose.yml up
 
 ### Publish ports on `127.0.0.1` only (`"127.0.0.1:48217:8080"`), with unusual host ports set in `docker/.env`.
 **Why:**
-- Without `127.0.0.1`, Docker listens on every network interface, so other devices on the same network (office or café Wi-Fi) could reach SQL Server and the API.
+- Without `127.0.0.1`, Docker listens on every network interface, so other devices on the same network (office or café Wi-Fi) could reach PostgreSQL and the API.
 - It also avoids a Docker Desktop IPv6 issue on Windows where `http://localhost` fails to load.
 - Unusual ports (48217, 48233) avoid clashes with other software, and `.env` makes them easy to change.
 
@@ -66,7 +66,7 @@ Build with the SDK image, then copy the output into a small runtime image.
 **Why:** Builds are reproducible. The same Dockerfile produces the same image today and next month, and upgrades are deliberate.
 
 ### No secrets in Dockerfiles or images. Pass them as environment variables at runtime.
-**Why:** Anyone with the image can read everything baked into it. The local SQL Server password goes in an untracked `.env` file read by compose, which is never committed.
+**Why:** Anyone with the image can read everything baked into it. The local PostgreSQL password goes in an untracked `.env` file read by compose, which is never committed.
 
 ### The same image runs locally, in GitHub Actions, and in Azure App Service.
 **Why:** "Works on my machine" problems disappear when every environment runs the identical image and only configuration differs.
