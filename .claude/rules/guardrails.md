@@ -33,12 +33,11 @@ There are three levels of enforcement:
 
 | Action | Why | Enforced by |
 |---|---|---|
-| **Every file creation or edit** | You review every change as it happens. | Hook |
-| **Every command not on the read-only list** (for example `mkdir`, `dotnet new`, `New-Item`, writing output to a file, running scripts) | Anything that might change something is your call. | Hook |
+| **Every command not on the read-only list** (for example `dotnet new`, `New-Item` for a file, writing output to a file, running scripts) | Anything that might change something is your call. | Hook |
 | **Network access**: `curl`, `Invoke-WebRequest`, `git pull/fetch/clone/push`, `dotnet restore`, `npm install`, WebFetch, WebSearch | Data could leave your machine, and downloaded code could run. You decide when that's acceptable. | Hook + Permission |
-| **SQL Server access**: `sqlcmd`, `Invoke-Sqlcmd`, `bcp`, `sqlpackage`, `dotnet ef` | Database changes can't be undone the way file changes can. | Hook + Permission |
-| `git commit`, `git merge`, `git rebase`, creating branches | You own the project history. | Hook + Permission |
-| Adding or removing NuGet or npm packages | Every package is outside code we take responsibility for. | Hook + Permission |
+| **Database access**: `psql`, `pg_dump`, `pg_restore`, `createdb`, `dropdb` (and the old SQL Server tools `sqlcmd`, `Invoke-Sqlcmd`, `bcp`, `sqlpackage`), `dotnet ef database …` (such as `update`), `dotnet ef dbcontext …`, `dotnet ef migrations list/script/bundle` | Database changes can't be undone the way file changes can. | Hook + Permission |
+| `git commit`, `git merge`, `git rebase`, `git checkout <name>` (could be a file path), `git switch` with force flags | You own the project history, and these forms can throw work away. | Hook + Permission |
+| Adding or removing NuGet or npm packages. Because the approved plan lists them, they are done together as the first step of a feature so the prompts come once, early. | Every package is outside code we take responsibility for. Approving the plan does not skip this prompt: the hook cannot tell a listed package from an unlisted one, and loosening it would weaken the supply-chain check. | Hook + Permission |
 | `dotnet user-secrets` | Secrets are yours to manage. | Hook + Permission |
 | Docker commands other than compose up/down/logs/ps on `docker/docker-compose.yml` | They can run arbitrary images, use the network, and change containers. | Hook |
 | Publishing a claude.ai Artifact (for example the `/review-changes` page) | It uploads content, including your code diff, to claude.ai. | Permission |
@@ -52,7 +51,11 @@ These are read-only, or are commands you explicitly allowed:
 - `docker compose -f docker/docker-compose.yml` with `up`, `down` (without `-v`), `logs`, or `ps`
 - Read-only commands: `ls`, `cat`, `grep`, `Get-ChildItem`, `Get-Content`, `git status`, `git log`, `git diff`, `git show`, listing branches
 - `node .claude/hooks/test-guards.js`
+- Creating a branch or switching: `git switch <name>`, `git switch -c <name>`, `git checkout -b <name>`
+- Creating folders inside the project: `mkdir`, `New-Item -ItemType Directory`
+- `dotnet ef migrations add`: it only generates files from the current model and never touches a database. The schema is reviewed in the plan first, and the generated file in `/review-changes`.
 - Reading project files
+- **Creating and editing files inside the project**, once you have approved the plan for the feature. You review the plan and the `/review-changes` page instead of every single file. The hook still denies or asks for anything on the lists above (outside the project, migrations, secrets, skipped tests, packages, removed tests, guardrail files).
 
 `dotnet format` rewrites code formatting and `dotnet build` writes `bin/` and `obj/`. They are allowed because you listed them as freely usable.
 
@@ -62,10 +65,11 @@ These can't be reliably checked by a script, so the AI is expected to follow the
 
 | Rule | Why |
 |---|---|
-| Don't change files unrelated to the current task. | Small, focused changes are easy to review and easy to revert. |
-| Plan in `docs/plans/<feature-name>.md` and get approval before writing code. | Agreeing on the design first is cheaper than rewriting code. |
+| Only create or edit files that belong to the approved plan of the current feature. The hook cannot tell which files those are. | Approving a plan replaces approving each file, so the plan's scope is the limit. Small, focused changes are easy to review and easy to revert. |
+| Plan in `docs/plans/<feature-name>.md` as an approval manifest (branch, files, packages, migrations, endpoints, tests, assumptions) and get approval before writing code. | Agreeing on the design first is cheaper than rewriting code, and one approval up front lets the feature be built without interruptions. |
 | Never weaken a failing test to make it pass. | The test exists to catch exactly that failure. |
-| When unsure, ask instead of guessing. | A wrong guess costs more time than a question. |
+| Ask while planning. After approval, decide using the rules and record it under Assumptions. Stop only for the conditions in [workflow.md](workflow.md). | A question before approval costs a minute. A question halfway through a build stops the whole feature. |
+| Stay inside the approved plan: no package, schema change, or public endpoint that the plan does not list. | The plan is what you approved. Anything new needs a new approval. |
 
 ## If a guardrail blocks something
 

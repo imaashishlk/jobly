@@ -1,9 +1,10 @@
 // PreToolUse hook for Write, Edit, MultiEdit and NotebookEdit.
 // Compares the file before and after the change and prints a permission decision:
 //   deny -> the change is blocked and the reason is shown to Claude
-//   ask  -> the user must approve the change (every allowed change ends up here)
+//   ask  -> the user must approve the change (packages, removed tests, guardrail files)
+//   allow -> an ordinary change inside the project, no approval needed
 // The reasons collected below are shown to the user in the approval prompt, so they
-// can see at a glance whether the change is ordinary or touches something sensitive.
+// can see at a glance why a change needs approval.
 // See .claude/rules/guardrails.md for the rules this enforces.
 
 const fs = require("fs");
@@ -144,7 +145,20 @@ switch (true) {
     break;
 }
 
-// 8. Every file change needs approval, even an ordinary one.
-askReasons.push(`${fileExists ? "Edits" : "Creates"} ${relativePath}.`);
-
-decide(denyReasons, askReasons);
+// 8. An ordinary change inside the project is allowed without asking: the user approves the plan
+// for a feature instead of every file. Whether a file belongs to the approved plan is an instruction
+// (see guardrails.md), not something this script can check. Anything that tripped a rule above
+// is still denied or asked about.
+if (denyReasons.length === 0 && askReasons.length === 0) {
+  process.stdout.write(
+    JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "allow",
+        permissionDecisionReason: `[Jobly guardrail] ${fileExists ? "Edits" : "Creates"} ${relativePath} inside the project.`,
+      },
+    })
+  );
+} else {
+  decide(denyReasons, askReasons);
+}

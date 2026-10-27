@@ -8,9 +8,26 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
+  <ItemGroup Label="Database">
+    <!-- EF Core with the PostgreSQL provider (Npgsql): maps our entities to PostgreSQL tables. Works with EF Core 10. -->
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <!-- Needed by `dotnet ef migrations add` in the startup project. Used only at development time. Same version as the dotnet-ef tool (10.0.13). -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.13" />
+  </ItemGroup>
+
+  <ItemGroup Label="Documents">
+    <!-- Reads the text out of an uploaded PDF CV. The official package id is PdfPig (the older UglyToad.PdfPig id is abandoned). -->
+    <PackageVersion Include="PdfPig" Version="0.1.16" />
+    <!-- Microsoft's Open XML SDK: reads the text out of an uploaded DOCX CV. -->
+    <PackageVersion Include="DocumentFormat.OpenXml" Version="3.5.1" />
+  </ItemGroup>
+
   <ItemGroup Label="Testing">
     <!-- Runs the real API in memory for integration tests. Matches the installed ASP.NET Core runtime (10.0.12). -->
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
+    <!-- In-memory relational database for tests, so services and endpoints run against a real EF Core provider instead of fakes.
+         Same version as the other EF Core packages (10.0.13). -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
     <!-- The .NET test host that `dotnet test` needs. -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <!-- Lets `dotnet test` and VS Code discover and run xUnit tests. -->

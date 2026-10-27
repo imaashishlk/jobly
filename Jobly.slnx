@@ -1,13 +1,9 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/Jobly.Domain/Jobly.Domain.csproj" />
-    <Project Path="src/Jobly.Application/Jobly.Application.csproj" />
-    <Project Path="src/Jobly.Infrastructure/Jobly.Infrastructure.csproj" />
     <Project Path="src/Jobly.Api/Jobly.Api.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Jobly.Domain.Tests/Jobly.Domain.Tests.csproj" />
-    <Project Path="tests/Jobly.Application.Tests/Jobly.Application.Tests.csproj" />
+    <Project Path="tests/Jobly.Api.UnitTests/Jobly.Api.UnitTests.csproj" />
     <Project Path="tests/Jobly.Api.Tests/Jobly.Api.Tests.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">

@@ -1,10 +1,9 @@
 using System.Net;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Jobly.Api.Tests.Endpoints;
 
-// IClassFixture: xUnit creates one in-memory API (WebApplicationFactory) and shares it across the tests in this class.
-public sealed class HealthEndpointTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+// IClassFixture: xUnit creates one in-memory API (JoblyApiFactory) and shares it across the tests in this class.
+public sealed class HealthEndpointTests(JoblyApiFactory factory) : IClassFixture<JoblyApiFactory>
 {
     [Fact]
     public async Task GetHealth_WithoutSignIn_ReturnsOkHealthy()

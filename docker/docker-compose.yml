@@ -20,25 +20,51 @@ services:
       - "127.0.0.1:${JOBLY_API_PORT:-48217}:8080" # your machine : container
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      # "__" becomes ":" in .NET configuration, so this is the setting ConnectionStrings:Jobly.
+      # The value comes from docker/.env. ":?" stops compose with this message if it is missing.
+      ConnectionStrings__Jobly: "${JOBLY_CONNECTION_STRING:?Set JOBLY_CONNECTION_STRING in docker/.env (copy docker/.env.example)}"
+      # The language model (Ollama) runs on your machine, not in Docker: Docker Desktop on Windows cannot use the GPU easily,
+      # and a model on a CPU inside a container is much slower. "host.docker.internal" is how a container reaches your machine.
+      Integrations__Llm__BaseUrl: "${JOBLY_LLM_BASE_URL:-http://host.docker.internal:11434}"
+      Integrations__Llm__ChatModel: "${JOBLY_LLM_CHAT_MODEL:-qwen2.5:7b}"
+      Integrations__Llm__EmbeddingModel: "${JOBLY_LLM_EMBEDDING_MODEL:-bge-m3}"
+    extra_hosts:
+      # Makes "host.docker.internal" work on Linux too (Docker Desktop on Windows and Mac already has it).
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        # Start the API only after PostgreSQL accepts connections (see the healthcheck below), so it never starts against a database that isn't ready.
+        condition: service_healthy
 
-  sqlserver:
-    # Pinned version, so every machine runs the same SQL Server. Not used by the code yet; ready for the first feature with data.
-    image: mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04
+  client:
+    build:
+      context: ..                       # The repository root, so the Dockerfile can copy client/.
+      dockerfile: docker/client/Dockerfile
     ports:
-      - "127.0.0.1:${JOBLY_SQL_PORT:-48233}:1433"   # Only your machine can connect (for example from VS Code or SSMS).
+      - "127.0.0.1:${JOBLY_CLIENT_PORT:-48251}:8080" # Open http://127.0.0.1:48251 in the browser.
+    depends_on:
+      - api                             # nginx passes /api requests to the api service (see docker/client/nginx.conf).
+
+  postgres:
+    # PostgreSQL 17 with the pgvector extension installed (not switched on yet; the first vector column's migration does that).
+    # Pinned version, so every machine runs the same database.
+    image: pgvector/pgvector:0.8.0-pg17
+    ports:
+      - "127.0.0.1:${JOBLY_DB_PORT:-48233}:5432"   # Only your machine can connect (for example from VS Code or DBeaver).
     environment:
-      ACCEPT_EULA: "Y"
+      POSTGRES_USER: jobly
+      POSTGRES_DB: jobly                            # Created automatically on the first start, so the migration only creates tables.
       # ":?" stops compose with this message if the password is missing, instead of starting a broken database.
-      MSSQL_SA_PASSWORD: "${SQL_SA_PASSWORD:?Set SQL_SA_PASSWORD in docker/.env (copy docker/.env.example)}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env (copy docker/.env.example)}"
     volumes:
-      - sqlserver-data:/var/opt/mssql  # A named volume keeps the database when containers stop or are rebuilt.
+      - postgres-data:/var/lib/postgresql/data      # A named volume keeps the database when containers stop or are rebuilt.
     healthcheck:
-      # Healthy once SQL Server answers a query. "$$" passes a literal "$" to the container's shell.
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q \"SELECT 1\" || exit 1"]
-      interval: 10s
+      # Healthy once PostgreSQL accepts connections for our user and database.
+      test: ["CMD-SHELL", "pg_isready -U jobly -d jobly"]
+      interval: 5s
       timeout: 5s
       retries: 10
-      start_period: 20s
+      start_period: 10s
 
 volumes:
-  sqlserver-data:
+  postgres-data:

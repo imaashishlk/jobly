@@ -3,8 +3,11 @@
 ### Write tests with xUnit, test first (TDD).
 **Why:** Tests written first describe what the code should do before it exists. That keeps the design focused, and a failing test proves the test works.
 
-### Name test projects `<ProjectName>.Tests`, for example `Jobly.Application.Tests`.
-**Why:** You can tell at a glance which project a test project covers.
+### There are two test projects for `Jobly.Api`: `Jobly.Api.UnitTests` and `Jobly.Api.Tests`.
+- `Jobly.Api.UnitTests`: entities, services, the CV reader, the LLM client, the EF model, and the slice rules. Folders mirror `src/Jobly.Api` (`Features/Jobs/`, `Common/`, ...).
+- `Jobly.Api.Tests`: endpoints over real HTTP (`WebApplicationFactory`).
+
+**Why:** The fast tests are kept apart from the ones that start the whole API, and the names say which project they cover.
 
 ### Name test methods `MethodName_Scenario_ExpectedResult`.
 For example: `CreateJob_TitleIsEmpty_ReturnsValidationError`.
@@ -22,12 +25,15 @@ For example: `CreateJob_TitleIsEmpty_ReturnsValidationError`.
 **Why:** Tests must give the same result every run, offline, without API keys or cost. See [code-style.md](code-style.md) and [integrations.md](integrations.md).
 
 ### Write fakes by hand. No mocking library.
-Put them in a `Fakes/` folder in the test project (for example `FakeJobRepository`, `FixedTimeProvider`). Each fake is a small `sealed` class that implements the interface.
+Put them in a `Fakes/` folder in the test project (for example `FakeLlmClient`, `FakeCvTextExtractor`, `FixedTimeProvider`). Each fake is a small `sealed` class that implements the interface.
 **Why:** There's no extra package, and a hand-written fake is plain C# you can read and step through in the debugger. Mocking libraries hide behavior behind setup syntax that's harder to learn.
 
+### The database is never faked. Services and endpoints run against a real in-memory SQLite database.
+Services take `JoblyDbContext` directly, so tests use `TestDatabase` (unit tests) or `JoblyApiFactory.Seed(...)` (endpoint tests) to add starting data. Check what was really saved through a **fresh** context (`database.NewContext()`), not the one the service used. After adding starting data, clear the change tracker, so the service starts like a real request.
+**Why:** A hand-written fake list can't enforce unique indexes, foreign keys, or cascades, so it hides database bugs. SQLite does, and it's fast and needs no Docker. It is not PostgreSQL, so Npgsql-specific details (column types, the migration snapshot) are checked in `JoblyDbContextModelTests`. The extra package, `Microsoft.EntityFrameworkCore.Sqlite`, is for tests only. Test code stores `DateTimeOffset` as a number, because SQLite can't sort by it.
+
 ### Endpoint integration tests use `WebApplicationFactory` from `Microsoft.AspNetCore.Mvc.Testing`.
-This is the only approved test helper package. It's added when the API test project is created, with your approval at that moment.
-**Why:** It starts the real API in memory and sends real HTTP requests, so routing, validation, DI, and JSON are all tested together. Integrations and the database are swapped for fakes in its DI setup.
+**Why:** It starts the real API in memory and sends real HTTP requests, so routing, validation, DI, and JSON are all tested together. The database is swapped for in-memory SQLite, and the LLM and file reader for fakes, in its DI setup.
 
 ### Test both the success and failure paths of a `Result`.
 **Why:** With the Result pattern, failures are normal return values. They're behavior and need tests just like success does.
@@ -38,8 +44,8 @@ This is the only approved test helper package. It's added when the API test proj
 ## Run a single test
 
 ```bash
-dotnet test --project tests/Jobly.Application.Tests --filter-method "Jobly.Application.Tests.JobServiceTests.CreateJob_TitleIsEmpty_ReturnsValidationError"
-dotnet test --project tests/Jobly.Application.Tests --filter-class "Jobly.Application.Tests.JobServiceTests"   # all tests in one class
+dotnet test --project tests/Jobly.Api.UnitTests --filter-method "Jobly.Api.UnitTests.Features.Jobs.JobServiceTests.CreateJob_TitleIsEmpty_ReturnsValidationErrorAndSavesNothing"
+dotnet test --project tests/Jobly.Api.UnitTests --filter-class "Jobly.Api.UnitTests.Features.Jobs.JobServiceTests"   # all tests in one class
 ```
 
 Tests run on the Microsoft Testing Platform (switched on in `global.json`), the runner xUnit v3 uses on .NET 10. That's why the filter options are `--filter-method` and `--filter-class` instead of the older `--filter "FullyQualifiedName~..."`.

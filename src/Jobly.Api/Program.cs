@@ -1,4 +1,10 @@
+using System.Text.Json.Serialization;
 using Jobly.Api.Common;
+using Jobly.Api.Features.Cvs;
+using Jobly.Api.Features.Jobs;
+using Jobly.Api.Features.Matches;
+using Jobly.Api.Integrations.Llm;
+using Jobly.Api.Persistence;
 using Microsoft.AspNetCore.Authorization;
 
 // ---------------------------------------------------------------------------------------------
@@ -16,6 +22,10 @@ builder.Services.AddSingleton(TimeProvider.System);
 // Checks [Required], [MaxLength], ... on request DTOs before the endpoint runs, and returns 400 with the details.
 builder.Services.AddValidation();
 
+// Enums travel as text in JSON ("Applied", "Manual") instead of numbers, in both directions.
+// The client then never depends on the order of the enum values.
+builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
 // Every error response uses the standard ProblemDetails JSON shape, including a traceId for finding the logs.
 builder.Services.AddProblemDetails();
 
@@ -24,6 +34,28 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // Health checks: Docker and Azure call /health to know the app is alive.
 builder.Services.AddHealthChecks();
+
+// The database (EF Core + PostgreSQL). Services use JoblyDbContext directly (see Persistence/).
+builder.Services.AddPersistence(builder.Configuration);
+
+// The language model (Ollama): ILlmClient, its settings from Integrations:Llm, and the typed HTTP client.
+builder.Services.AddLlmIntegration(builder.Configuration);
+
+// --- Features: one block per folder in Features/ ---
+
+// Scoped: one JobService per request. It asks for JoblyDbContext, which is also scoped.
+builder.Services.AddScoped<IJobService, JobService>();
+
+// The CV use cases. The file reader keeps no state, so one shared instance (singleton) is enough.
+builder.Services.AddScoped<ICvService, CvService>();
+builder.Services.AddSingleton<ICvTextExtractor, CvTextExtractor>();
+
+// The Match agent that compares the CV with a job using the language model.
+builder.Services.AddScoped<IMatchAgent, MatchAgent>();
+
+// No endpoint needs a request bigger than a 5 MB CV file plus the form's own overhead. Anything larger is refused
+// with 413 before it is read into memory. (Kestrel is the web server that runs inside the API.)
+builder.WebHost.ConfigureKestrel(kestrel => kestrel.Limits.MaxRequestBodySize = 6 * 1024 * 1024);
 
 builder.Services.AddAuthorization(options =>
 {
@@ -46,6 +78,10 @@ app.UseStatusCodePages();
 app.UseAuthorization();
 
 // --- Endpoints --------------------------------------------------------------------------------
+
+app.MapJobEndpoints();
+app.MapCvEndpoints();
+app.MapMatchEndpoints();
 
 app.MapHealthChecks("/health")
     .AllowAnonymous(); // Public on purpose: Docker and Azure must reach it without signing in. It only says "Healthy".
