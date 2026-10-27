@@ -34,14 +34,30 @@ const cases = [
   [shellHook, shell("git status --porcelain"), "none"],
   [shellHook, shell("git ls-files --others --exclude-standard"), "none"],
   // Shell: anything that may change something needs approval
-  [shellHook, shell("mkdir src"), "ask"],
-  [shellHook, shell("New-Item -ItemType Directory src"), "ask"],
   [shellHook, shell("dotnet new sln -n Jobly"), "ask"],
   [shellHook, shell("echo hello > notes.txt"), "ask"],
   [shellHook, shell("git branch feature/jobs"), "ask"],
-  [shellHook, shell("git checkout -b feature/jobs"), "ask"],
   [shellHook, shell("node some-script.js"), "ask"],
   [shellHook, shell("dotnet run --project src/Other"), "ask"],
+  // Shell: creating a branch or folder inside the project runs freely
+  [shellHook, shell("git checkout -b feature/jobs"), "none"],
+  [shellHook, shell("git switch -c feature/jobs"), "none"],
+  [shellHook, shell("git switch main"), "none"],
+  [shellHook, shell("mkdir src"), "none"],
+  [shellHook, shell("mkdir -p tests/Jobly.Api.Tests/Fakes"), "none"],
+  [shellHook, shell("New-Item -ItemType Directory src"), "none"],
+  [shellHook, shell("New-Item -ItemType Directory -Force docs/plans"), "none"],
+  // Shell: ...but not the risky variants
+  [shellHook, shell("git checkout main"), "ask"],
+  [shellHook, shell("git checkout src/Program.cs"), "ask"],
+  [shellHook, shell("git switch --discard-changes main"), "ask"],
+  [shellHook, shell("git switch -f main"), "ask"],
+  [shellHook, shell("git checkout -b -f main"), "ask"],
+  [shellHook, shell("git checkout -- src/Program.cs"), "deny"],
+  [shellHook, shell("mkdir ../outside"), "deny"],
+  [shellHook, shell("mkdir C:\\temp\\outside"), "deny"],
+  [shellHook, shell("New-Item -ItemType File notes.txt"), "ask"],
+  [shellHook, shell("New-Item -ItemType Directory src -Value x"), "ask"],
   // Shell: Docker compose dev loop runs freely, only with our compose file
   [shellHook, shell("docker compose -f docker/docker-compose.yml up -d --build"), "none"],
   [shellHook, shell("docker compose -f docker/docker-compose.yml logs api"), "none"],
@@ -84,7 +100,12 @@ const cases = [
   // Shell: packages and migrations
   [shellHook, shell("dotnet add src/Jobly.Api package Moq"), "ask"],
   [shellHook, shell("npm install"), "ask"],
-  [shellHook, shell("dotnet ef migrations add InitialCreate --project src/Jobly.Infrastructure"), "ask"],
+  [shellHook, shell("dotnet ef migrations add InitialCreate --project src/Jobly.Infrastructure --startup-project src/Jobly.Api"), "none"],
+  [shellHook, shell("dotnet ef database update --project src/Jobly.Infrastructure"), "ask"],
+  [shellHook, shell("dotnet ef migrations list"), "ask"],
+  [shellHook, shell("dotnet ef migrations script"), "ask"],
+  [shellHook, shell("dotnet ef migrations add X && dotnet ef database update"), "ask"],
+  [shellHook, shell("dotnet ef database drop"), "deny"],
 
   // Files: an ordinary change inside the project is allowed without asking
   [filesHook, write("src/Jobly.Domain/Job.cs", "public sealed class Job {}"), "allow"],
@@ -100,7 +121,8 @@ const cases = [
   [filesHook, write("src/Jobly.Api/appsettings.json", fakePasswordConnection), "deny"],
   [filesHook, write("tests/Jobly.Application.Tests/JobServiceTests.cs", '[Fact(Skip = "later")] public void A() {}'), "deny"],
   // Files: need approval
-  [filesHook, write("src/Jobly.Api/Jobly.Api.csproj", '<Project><ItemGroup><PackageReference Include="Moq" /><PackageReference Include="Another" /></ItemGroup></Project>'), "ask"],
+  // A project file that does not exist, so the result never depends on the packages the real csproj files hold today.
+  [filesHook, write("src/Jobly.Sample/Jobly.Sample.csproj", '<Project><ItemGroup><PackageReference Include="Moq" /><PackageReference Include="Another" /></ItemGroup></Project>'), "ask"],
   [filesHook, write("client/package.json", '{"dependencies":{"axios":"1.7.0"}}'), "ask"],
   [filesHook, edit(".claude/settings.json", '"hooks"', '"hooks"'), "ask"],
 ];

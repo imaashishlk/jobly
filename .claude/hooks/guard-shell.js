@@ -51,6 +51,12 @@ const readOnlyPrograms = [
   "sl", "pushd", "popd", "true",
 ];
 
+// A plain branch name such as feature/job-search. It must not start with "-", so a flag like
+// --force or --discard-changes can never be mistaken for a name.
+function isBranchName(word) {
+  return /^\w[\w./-]*$/.test(word || "");
+}
+
 // Returns true when a segment is known to be safe to run without asking.
 function isSafeSegment(words) {
   const program = path.basename((words[0] || "").toLowerCase()).replace(/\.exe$/, "");
@@ -70,6 +76,10 @@ function isSafeSegment(words) {
         case "run":
           // Only the API project may be run without asking.
           return /--project\s+["']?\.?[\\/]?src[\\/]Jobly\.Api\b/i.test(rest);
+        case "ef":
+          // "migrations add" only generates new files from the current model. It never touches a
+          // database. Everything else (database update, remove, drop, scaffold) still asks or is denied.
+          return (words[2] || "").toLowerCase() === "migrations" && (words[3] || "").toLowerCase() === "add";
         default:
           return false;
       }
@@ -88,9 +98,28 @@ function isSafeSegment(words) {
           return words.slice(2).every((word) => /^(-a|-l|-v|-vv|-r|--list|--all|--show-current)$/.test(word));
         case "remote":
           return words.slice(2).every((word) => word === "-v");
+        case "switch": {
+          // "git switch <branch>" or "git switch -c <new-branch>". Any other flag (-f, --discard-changes) asks.
+          const args = words.slice(2);
+          return (args.length === 1 && isBranchName(args[0])) || (args.length === 2 && args[0] === "-c" && isBranchName(args[1]));
+        }
+        case "checkout": {
+          // Only "git checkout -b <new-branch>". A plain "git checkout <name>" could be a file path,
+          // and checking out a file throws away its changes, so that form still asks.
+          const args = words.slice(2);
+          return args.length === 2 && args[0] === "-b" && isBranchName(args[1]);
+        }
         default:
           return false;
       }
+    case "mkdir":
+    case "md":
+      // Only creates folders. Paths outside the project are denied separately by the path check below.
+      return true;
+    case "new-item":
+    case "ni":
+      // Only the folder form of New-Item. Creating a file (or setting its content) still asks.
+      return /-(itemtype|type)\s+["']?(directory|dir)["']?(\s|$)/i.test(rest) && !/-value\b/i.test(rest);
     case "node":
       // Only the guardrail self-test runs without asking. Any other script could do anything.
       return /^\.?[\\/]?\.claude[\\/]hooks[\\/]test-guards\.js$/.test(words[1] || "") && words.length === 2;
@@ -180,7 +209,8 @@ const askPatterns = [
   [/\bdotnet\s+(add\b.*\bpackage\b|package\s+add\b)/i, "Adding a NuGet package needs your approval."],
   [/\bdotnet\s+(remove|package\s+remove)\b/i, "Removing a package or project reference needs your approval."],
   [/\bdotnet\s+(restore|tool\s+(install|update))\b/i, "This downloads packages from the network."],
-  [/\bdotnet\s+ef\b/i, "EF Core migrations and database commands need your approval."],
+  // "dotnet ef migrations add" is excluded: it is allowed (see isSafeSegment).
+  [/\bdotnet\s+ef\b(?!\s+migrations\s+add\b)/i, "EF Core database commands need your approval."],
   [/\bdotnet\s+user-secrets\b/i, "Changing user secrets needs your approval."],
   [/\b(Install-Package|nuget\s+install)\b/i, "Adding a NuGet package needs your approval."],
   [/\bnpm\s+(install|i|add|ci|update|uninstall|remove)\b/i, "npm commands that change packages use the network and need your approval."],
