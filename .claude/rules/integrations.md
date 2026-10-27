@@ -7,32 +7,24 @@ An **integration** is anything Jobly talks to outside its own code and database:
 ## Folder layout
 
 ```
-src/
-  Jobly.Application/
-    Integrations/
-      Llm/
-        ILlmClient.cs              The contract: what the app needs from an LLM
-        LlmRequest.cs / LlmResponse.cs
-      Email/
-        IEmailSender.cs
-  Jobly.Infrastructure/
-    Integrations/
-      Llm/                          Everything about the LLM implementation, in one folder
-        LlmOptions.cs               Settings (model, base URL, timeout), bound from configuration
-        <Provider>LlmClient.cs      The real implementation, using a typed HttpClient
-        LlmErrors.cs                Error codes this integration can return
-        LlmServiceCollectionExtensions.cs   AddLlmIntegration(): the only DI registration
-      Email/
-        ...
+src/Jobly.Api/
+  Integrations/
+    Llm/                                 Everything about the LLM, in one folder
+      ILlmClient.cs                      The contract: what the app needs from an LLM
+      LlmRequest.cs / LlmResponse.cs
+      LlmOptions.cs                      Settings (model, base URL, timeout), bound from configuration
+      <Provider>LlmClient.cs             The real implementation, using a typed HttpClient (OllamaLlmClient)
+      LlmErrors.cs                       Error codes this integration can return
+      LlmServiceCollectionExtensions.cs  AddLlmIntegration(): the only DI registration
+    Email/
+      ...
 ```
 
-Each integration has the same name in both projects (`Integrations/Llm/`), so you always know where to look.
+The contract and the implementation sit side by side. Features depend only on the interface; they never mention the provider class.
+- The **interface** says *what* the app needs ("give me a completion for this prompt").
+- The **implementation** says *how* ("call this provider's HTTP API with this key").
 
-**Why the contract and the implementation are in different projects:** the dependency rule says Application must not depend on Infrastructure.
-- **Application** says *what* it needs ("give me a completion for this prompt").
-- **Infrastructure** says *how* ("call this provider's HTTP API with this key").
-
-That split is what lets you swap LLM providers, or use a fake in tests, without touching a single service.
+**Why this still keeps providers swappable:** features only receive `ILlmClient` through dependency injection. Changing provider, or using a fake in tests, means changing one registration, not a single feature. The implementation class is `internal`, so a feature can't use it by accident.
 
 ## Rules for every integration
 
@@ -40,7 +32,7 @@ That split is what lets you swap LLM providers, or use a fake in tests, without 
 **Why:** To understand, debug, or replace the LLM integration you open one folder. Nothing is scattered across the codebase.
 
 ### Business code depends only on the interface (`ILlmClient`), never on the provider class.
-**Why:** Loose coupling. Changing provider, or adding a second one, means writing a new class in `Infrastructure/Integrations/Llm/`. Services, endpoints, and tests don't change.
+**Why:** Loose coupling. Changing provider, or adding a second one, means writing a new class in `Integrations/Llm/`. Features, endpoints, and tests don't change.
 
 ### Each integration registers itself with one extension method (`AddLlmIntegration()`), called from `Program.cs`.
 **Why:** `Program.cs` stays a readable list of features. Turning an integration on, off, or swapping it is one line.

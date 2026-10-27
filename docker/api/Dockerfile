@@ -10,9 +10,7 @@ WORKDIR /src
 # Copy only the project files first and restore packages. Docker caches this layer, so packages are
 # downloaded again only when a .csproj or the package versions change, not on every code change.
 COPY Directory.Build.props Directory.Packages.props ./
-COPY src/Jobly.Domain/Jobly.Domain.csproj src/Jobly.Domain/
-COPY src/Jobly.Application/Jobly.Application.csproj src/Jobly.Application/
-COPY src/Jobly.Infrastructure/Jobly.Infrastructure.csproj src/Jobly.Infrastructure/
+# There is only one source project now (features live in folders inside it), so only one .csproj to copy.
 COPY src/Jobly.Api/Jobly.Api.csproj src/Jobly.Api/
 RUN dotnet restore src/Jobly.Api/Jobly.Api.csproj
 

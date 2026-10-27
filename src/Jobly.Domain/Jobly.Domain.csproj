@@ -1,3 +1,0 @@
-<!-- The core of the app: entities, value objects, business rules, Result/Error. References nothing. -->
-<Project Sdk="Microsoft.NET.Sdk">
-</Project>

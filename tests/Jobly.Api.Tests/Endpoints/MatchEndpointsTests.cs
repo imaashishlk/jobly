@@ -2,11 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Jobly.Application.Integrations.Llm;
-using Jobly.Application.Matches;
-using Jobly.Domain.Common;
-using Jobly.Domain.Cvs;
-using Jobly.Domain.Jobs;
+using Jobly.Api.Common;
+using Jobly.Api.Features.Cvs;
+using Jobly.Api.Features.Jobs;
+using Jobly.Api.Features.Matches;
+using Jobly.Api.Integrations.Llm;
 
 namespace Jobly.Api.Tests.Endpoints;
 
@@ -39,7 +39,7 @@ public sealed class MatchEndpointsTests : IDisposable
     {
         // Arrange
         var job = await AddJob();
-        factory.Cvs.Current = Cv.Create("Ola Nordmann, C# developer", CvSource.Pasted, null, Now).Value;
+        await AddCv("Ola Nordmann, C# developer");
 
         // Act
         var response = await client.PostAsync($"/api/jobs/{job.Id}/match", content: null, TestContext.Current.CancellationToken);
@@ -50,7 +50,7 @@ public sealed class MatchEndpointsTests : IDisposable
         Assert.Equal(72, body!.Score);
         Assert.Equal(["C#", "SQL"], body.MatchingSkills);
         Assert.Equal(["Kubernetes"], body.Gaps);
-        Assert.Single(factory.Matches.Matches);
+        Assert.Equal(1, await factory.StoredMatchCount());
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public sealed class MatchEndpointsTests : IDisposable
     public async Task PostMatch_UnknownJob_ReturnsNotFound()
     {
         // Arrange
-        factory.Cvs.Current = Cv.Create("CV", CvSource.Pasted, null, Now).Value;
+        await AddCv("CV");
 
         // Act
         var response = await client.PostAsync($"/api/jobs/{Guid.NewGuid()}/match", content: null, TestContext.Current.CancellationToken);
@@ -87,7 +87,7 @@ public sealed class MatchEndpointsTests : IDisposable
     {
         // Arrange: Ollama is not running.
         var job = await AddJob();
-        factory.Cvs.Current = Cv.Create("CV", CvSource.Pasted, null, Now).Value;
+        await AddCv("CV");
         factory.Llm.Result = Result.Failure<LlmResponse>(Error.Unavailable("Llm.Unavailable", "The language model cannot be reached. Is Ollama running?"));
 
         // Act
@@ -99,7 +99,7 @@ public sealed class MatchEndpointsTests : IDisposable
         Assert.Equal("Llm.Unavailable", problem.RootElement.GetProperty("errorCode").GetString());
         Assert.Contains("Ollama", problem.RootElement.GetProperty("detail").GetString(), StringComparison.Ordinal);
         Assert.True(problem.RootElement.TryGetProperty("traceId", out _));
-        Assert.Empty(factory.Matches.Matches);
+        Assert.Equal(0, await factory.StoredMatchCount());
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public sealed class MatchEndpointsTests : IDisposable
     {
         // Arrange
         var job = await AddJob();
-        factory.Cvs.Current = Cv.Create("CV", CvSource.Pasted, null, Now).Value;
+        await AddCv("CV");
         factory.Llm.AnswerWith("I think this is a great match!");
 
         // Act
@@ -123,7 +123,7 @@ public sealed class MatchEndpointsTests : IDisposable
     {
         // Arrange
         var job = await AddJob();
-        factory.Cvs.Current = Cv.Create("CV", CvSource.Pasted, null, Now).Value;
+        await AddCv("CV");
         await client.PostAsync($"/api/jobs/{job.Id}/match", content: null, TestContext.Current.CancellationToken);
 
         // Act
@@ -152,9 +152,11 @@ public sealed class MatchEndpointsTests : IDisposable
     private async Task<Job> AddJob()
     {
         var job = Job.Create("Backend Developer", "Acme AS", null, "Build APIs in C#.", null, JobSource.Manual, null, Now).Value;
-        await factory.Jobs.Add(job, TestContext.Current.CancellationToken);
+        await factory.Seed(job);
         return job;
     }
+
+    private Task AddCv(string text) => factory.Seed(Cv.Create(text, CvSource.Pasted, null, Now).Value);
 
     private static async Task<string?> ReadErrorCode(HttpResponseMessage response)
     {

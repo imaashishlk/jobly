@@ -7,10 +7,10 @@ Each rule has a **Why** so the reasoning is clear, not just the rule.
 ### Keep code simple. No clever tricks.
 **Why:** Code is read far more often than it is written. Code a junior developer understands on first read is easy to review, debug, and change safely.
 
-### Follow SOLID. Depend on interfaces, not concrete classes.
-**Why:** If `JobService` depends on `IJobRepository` instead of `SqlJobRepository`, you can swap the database, or use a fake in a unit test, without touching `JobService`. That is what "loosely coupled" means in practice.
+### Follow SOLID. Depend on interfaces at real boundaries (the LLM, the file reader), not concrete classes.
+**Why:** If `MatchAgent` depends on `ILlmClient` instead of `OllamaLlmClient`, you can swap the provider, or use a fake in a unit test, without touching `MatchAgent`. That is what "loosely coupled" means in practice. Inside the app, services use `JoblyDbContext` directly: an interface in front of every class would only add files (see [architecture.md](architecture.md)).
 
-### Register services, repositories, and integrations with dependency injection.
+### Register services and integrations with dependency injection.
 **Why:** Classes don't create their own dependencies with `new`. They ask for them in the constructor and ASP.NET Core supplies them. Wiring lives in one place (the composition root in `Jobly.Api`), and tests can pass in fakes.
 
 ### Mark classes `sealed` unless they are designed for inheritance.
@@ -34,7 +34,7 @@ Each rule has a **Why** so the reasoning is clear, not just the rule.
 - It avoids exceptions, which are expensive to throw and catch.
 
 **How:**
-- We write a small `Result` / `Result<T>` / `Error` type ourselves in `Jobly.Domain/Common/`, with no package.
+- We write a small `Result` / `Result<T>` / `Error` type ourselves in `Jobly.Api/Common/`, with no package.
 - `Error` has a `Code` (for example `Job.NotFound`) and a `Message`.
 - The API layer maps errors to HTTP status codes with a `switch`.
 - Truly unexpected exceptions (database down, bugs) are caught once by a global exception handler (`IExceptionHandler`), logged with the trace ID, and returned as `ProblemDetails`.
@@ -66,7 +66,7 @@ Each rule has a **Why** so the reasoning is clear, not just the rule.
 
 ## Data and API boundaries
 
-### Build the API with Minimal APIs: one static class per feature in `Jobly.Api/Endpoints/<Feature>/`, with a `Map<Feature>Endpoints()` extension method.
+### Build the API with Minimal APIs: one static class per feature in `Jobly.Api/Features/<Feature>/`, with a `Map<Feature>Endpoints()` extension method.
 ```csharp
 // Program.cs stays a short, readable list of features:
 app.MapJobEndpoints();
@@ -95,7 +95,7 @@ Use `[Required]`, `[MaxLength]`, `[Range]`, `[EmailAddress]`, and similar. In .N
 **Why:**
 - Bad input is rejected at the door with a clear `400 Bad Request`, before it reaches business logic or the database, so inner layers can trust what they receive.
 - Annotations sit right on the DTO, so you can read the rules where the data is defined.
-- Business rules ("a job can't close before it opens") belong in the Domain and come back as `Result` errors, not annotations.
+- Business rules ("a job can't close before it opens") belong in the feature's entities (for example `Job.Update`) and come back as `Result` errors, not annotations.
 
 ### Write LINQ queries that stay readable.
 **Why:** EF Core translates LINQ to SQL. A clear query is easier to check for performance problems, such as loading too much data or N+1 queries. Project to DTOs with `.Select(...)` so only the needed columns are fetched.

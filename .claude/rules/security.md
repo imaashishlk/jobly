@@ -66,7 +66,7 @@ public async Task<Result<JobResponse>> UpdateJob(Guid jobId, UpdateJobRequest re
     ...
 }
 ```
-- The current user comes from an `ICurrentUser` interface declared in Application and implemented in Api from `HttpContext.User`. Services never touch `HttpContext` directly.
+- The current user comes from an `ICurrentUser` interface declared in `Common/` and implemented from `HttpContext.User` in the API's web layer. Services never touch `HttpContext` directly.
 - A failed check returns a `Result` error (for example `Job.NotOwner`), which the API maps to `403 Forbidden` in its shared Result-to-HTTP `switch`.
 - Every ownership check gets unit tests for both cases: the owner is allowed, and a non-owner is refused.
 

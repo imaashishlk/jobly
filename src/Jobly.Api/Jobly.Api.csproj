@@ -1,6 +1,17 @@
-﻿<!-- The web entry point: Minimal API endpoints, validation, auth, and the composition root (Program.cs). -->
-<Project Sdk="Microsoft.NET.Sdk.Web"><PropertyGroup>  <UserSecretsId>e0f7e084-e4a9-4d71-bf26-840570126bf8</UserSecretsId>
+﻿<!-- The one source project. Each feature lives in Features/<Name>/ (entity, DTOs, service, endpoints, EF mapping together). -->
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <UserSecretsId>e0f7e084-e4a9-4d71-bf26-840570126bf8</UserSecretsId>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- EF Core with the PostgreSQL provider: the real database. -->
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <!-- Read the text out of an uploaded CV (PDF and DOCX), used by the Cvs feature. -->
+    <PackageReference Include="PdfPig" />
+    <PackageReference Include="DocumentFormat.OpenXml" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Only for `dotnet ef` design-time work. PrivateAssets keeps it out of the published app. -->
@@ -11,13 +22,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Jobly.Application\Jobly.Application.csproj" />
-    <ProjectReference Include="..\Jobly.Infrastructure\Jobly.Infrastructure.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- Lets the test project use classes marked `internal`, so they don't have to be public just for testing. -->
+    <!-- Lets the test projects use classes marked `internal`, so they don't have to be public just for testing. -->
     <InternalsVisibleTo Include="Jobly.Api.Tests" />
+    <InternalsVisibleTo Include="Jobly.Api.UnitTests" />
   </ItemGroup>
 
 </Project>

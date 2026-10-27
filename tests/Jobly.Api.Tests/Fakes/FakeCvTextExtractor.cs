@@ -1,5 +1,5 @@
-using Jobly.Application.Cvs;
-using Jobly.Domain.Common;
+using Jobly.Api.Common;
+using Jobly.Api.Features.Cvs;
 
 namespace Jobly.Api.Tests.Fakes;
 
@@ -7,7 +7,7 @@ namespace Jobly.Api.Tests.Fakes;
 public sealed class FakeCvTextExtractor : ICvTextExtractor
 {
     /// <summary>What the next call returns. Set it to a failure to test the error path.</summary>
-    public Result<string> Result { get; set; } = Domain.Common.Result.Success("Text read from the file");
+    public Result<string> Result { get; set; } = Jobly.Api.Common.Result.Success("Text read from the file");
 
     public Task<Result<string>> Extract(Stream content, string fileName, CancellationToken cancellationToken) => Task.FromResult(Result);
 }

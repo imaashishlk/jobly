@@ -1,5 +1,5 @@
-using Jobly.Application.Integrations.Llm;
-using Jobly.Domain.Common;
+using Jobly.Api.Common;
+using Jobly.Api.Integrations.Llm;
 
 namespace Jobly.Api.Tests.Fakes;
 
@@ -10,11 +10,11 @@ public sealed class FakeLlmClient : ILlmClient
     public const string ValidAnswer = """{"score":72,"summary":"Good fit for the backend work.","matchingSkills":["C#","SQL"],"gaps":["Kubernetes"]}""";
 
     /// <summary>What the next call returns. Set it to a failure to test the "model is down" path.</summary>
-    public Result<LlmResponse> Result { get; set; } = Domain.Common.Result.Success(new LlmResponse(ValidAnswer, "fake-model", 100, 50));
+    public Result<LlmResponse> Result { get; set; } = Jobly.Api.Common.Result.Success(new LlmResponse(ValidAnswer, "fake-model", 100, 50));
 
     public int CallCount { get; private set; }
 
-    public void AnswerWith(string text) => Result = Domain.Common.Result.Success(new LlmResponse(text, "fake-model", 100, 50));
+    public void AnswerWith(string text) => Result = Jobly.Api.Common.Result.Success(new LlmResponse(text, "fake-model", 100, 50));
 
     public Task<Result<LlmResponse>> Complete(LlmRequest request, CancellationToken cancellationToken)
     {

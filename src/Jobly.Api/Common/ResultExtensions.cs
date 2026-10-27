@@ -1,4 +1,3 @@
-using Jobly.Domain.Common;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Jobly.Api.Common;

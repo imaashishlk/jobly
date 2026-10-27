@@ -1,5 +1,4 @@
 using Jobly.Api.Common;
-using Jobly.Domain.Common;
 
 namespace Jobly.Api.Tests.Common;
 

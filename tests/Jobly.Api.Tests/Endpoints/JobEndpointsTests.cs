@@ -2,8 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Jobly.Application.Jobs;
-using Jobly.Domain.Jobs;
+using Jobly.Api.Features.Jobs;
 
 namespace Jobly.Api.Tests.Endpoints;
 
@@ -48,9 +47,9 @@ public sealed class JobEndpointsTests : IDisposable
     public async Task GetJobs_WithStatusFilter_ReturnsOnlyThatColumn()
     {
         // Arrange
-        await AddJob("Still saved");
-        var applied = await AddJob("Applied one");
+        var applied = NewJob("Applied one");
         applied.Application.ChangeStatus(ApplicationStatus.Applied, Now);
+        await factory.Seed(NewJob("Still saved"), applied);
 
         // Act
         var response = await client.GetAsync("/api/jobs?status=Applied", TestContext.Current.CancellationToken);
@@ -113,7 +112,7 @@ public sealed class JobEndpointsTests : IDisposable
         var body = await response.Content.ReadFromJsonAsync<JobResponse>(JsonOptions, TestContext.Current.CancellationToken);
         Assert.Equal(ApplicationStatus.Saved, body!.Status);
         Assert.Equal($"/api/jobs/{body.Id}", response.Headers.Location!.OriginalString);
-        Assert.Single(factory.Jobs.Jobs);
+        Assert.Equal(1, await factory.StoredJobCount());
     }
 
     [Fact]
@@ -127,7 +126,7 @@ public sealed class JobEndpointsTests : IDisposable
 
         // Assert: rejected by the [Required] annotation before the service runs.
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Empty(factory.Jobs.Jobs);
+        Assert.Equal(0, await factory.StoredJobCount());
     }
 
     [Fact]
@@ -200,7 +199,10 @@ public sealed class JobEndpointsTests : IDisposable
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         using var problem = await ReadJson(response);
         Assert.Equal("Job.InvalidStatusChange", problem.RootElement.GetProperty("errorCode").GetString());
-        Assert.Equal(ApplicationStatus.Saved, job.Application.Status);
+
+        // The refused move must not have changed anything: read the job back through the API.
+        var stored = await client.GetFromJsonAsync<JobResponse>($"/api/jobs/{job.Id}", JsonOptions, TestContext.Current.CancellationToken);
+        Assert.Equal(ApplicationStatus.Saved, stored!.Status);
     }
 
     [Fact]
@@ -249,7 +251,7 @@ public sealed class JobEndpointsTests : IDisposable
 
         // Assert
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-        Assert.Empty(factory.Jobs.Jobs);
+        Assert.Equal(0, await factory.StoredJobCount());
     }
 
     [Fact]
@@ -262,11 +264,14 @@ public sealed class JobEndpointsTests : IDisposable
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
-    // Puts a job straight into the fake storage, so each test controls its own starting data.
+    private static Job NewJob(string title) =>
+        Job.Create(title, "Acme", null, "Description", null, JobSource.Manual, null, Now).Value;
+
+    // Puts a job straight into the database, so each test controls its own starting data.
     private async Task<Job> AddJob(string title)
     {
-        var job = Job.Create(title, "Acme", null, "Description", null, JobSource.Manual, null, Now).Value;
-        await factory.Jobs.Add(job, TestContext.Current.CancellationToken);
+        var job = NewJob(title);
+        await factory.Seed(job);
         return job;
     }
 

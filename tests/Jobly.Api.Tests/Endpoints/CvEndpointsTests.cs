@@ -3,9 +3,8 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Jobly.Application.Cvs;
-using Jobly.Domain.Common;
-using Jobly.Domain.Cvs;
+using Jobly.Api.Common;
+using Jobly.Api.Features.Cvs;
 
 namespace Jobly.Api.Tests.Endpoints;
 
@@ -48,7 +47,7 @@ public sealed class CvEndpointsTests : IDisposable
     public async Task GetCv_CvExists_ReturnsOkWithTheText()
     {
         // Arrange
-        factory.Cvs.Current = Cv.Create("Ola Nordmann, C# developer", CvSource.Uploaded, "cv.pdf", Now).Value;
+        await factory.Seed(Cv.Create("Ola Nordmann, C# developer", CvSource.Uploaded, "cv.pdf", Now).Value);
 
         // Act
         var response = await client.GetAsync("/api/cv", TestContext.Current.CancellationToken);
@@ -69,8 +68,9 @@ public sealed class CvEndpointsTests : IDisposable
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("Pasted CV text", factory.Cvs.Current!.Text);
-        Assert.Equal(CvSource.Pasted, factory.Cvs.Current.Source);
+        var stored = await factory.StoredCv();
+        Assert.Equal("Pasted CV text", stored!.Text);
+        Assert.Equal(CvSource.Pasted, stored.Source);
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public sealed class CvEndpointsTests : IDisposable
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Null(factory.Cvs.Current);
+        Assert.Null(await factory.StoredCv());
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public sealed class CvEndpointsTests : IDisposable
         var body = await response.Content.ReadFromJsonAsync<CvResponse>(JsonOptions, TestContext.Current.CancellationToken);
         Assert.Equal("Text from the PDF", body!.Text);
         Assert.Equal("cv.pdf", body.FileName);
-        Assert.Equal(CvSource.Uploaded, factory.Cvs.Current!.Source);
+        Assert.Equal(CvSource.Uploaded, (await factory.StoredCv())!.Source);
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public sealed class CvEndpointsTests : IDisposable
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal("Cv.UnsupportedFileType", await ReadErrorCode(response));
-        Assert.Null(factory.Cvs.Current);
+        Assert.Null(await factory.StoredCv());
     }
 
     [Fact]
@@ -174,14 +174,14 @@ public sealed class CvEndpointsTests : IDisposable
     public async Task DeleteCv_CvExists_ReturnsNoContentAndRemovesIt()
     {
         // Arrange
-        factory.Cvs.Current = Cv.Create("My CV", CvSource.Pasted, null, Now).Value;
+        await factory.Seed(Cv.Create("My CV", CvSource.Pasted, null, Now).Value);
 
         // Act
         var response = await client.DeleteAsync("/api/cv", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-        Assert.Null(factory.Cvs.Current);
+        Assert.Null(await factory.StoredCv());
     }
 
     [Fact]

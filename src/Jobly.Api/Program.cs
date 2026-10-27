@@ -1,13 +1,10 @@
 using System.Text.Json.Serialization;
 using Jobly.Api.Common;
-using Jobly.Api.Endpoints.Cvs;
-using Jobly.Api.Endpoints.Jobs;
-using Jobly.Api.Endpoints.Matches;
-using Jobly.Application.Cvs;
-using Jobly.Application.Jobs;
-using Jobly.Application.Matches;
-using Jobly.Infrastructure;
-using Jobly.Infrastructure.Integrations.Llm;
+using Jobly.Api.Features.Cvs;
+using Jobly.Api.Features.Jobs;
+using Jobly.Api.Features.Matches;
+using Jobly.Api.Integrations.Llm;
+using Jobly.Api.Persistence;
 using Microsoft.AspNetCore.Authorization;
 
 // ---------------------------------------------------------------------------------------------
@@ -38,17 +35,22 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 // Health checks: Docker and Azure call /health to know the app is alive.
 builder.Services.AddHealthChecks();
 
-// The database (EF Core + PostgreSQL) and the repositories that use it (see Jobly.Infrastructure/DependencyInjection.cs).
-builder.Services.AddInfrastructure(builder.Configuration);
+// The database (EF Core + PostgreSQL). Services use JoblyDbContext directly (see Persistence/).
+builder.Services.AddPersistence(builder.Configuration);
 
 // The language model (Ollama): ILlmClient, its settings from Integrations:Llm, and the typed HTTP client.
 builder.Services.AddLlmIntegration(builder.Configuration);
 
-// Scoped: one JobService per request. It asks for IJobRepository, which is the PostgreSQL one registered above.
+// --- Features: one block per folder in Features/ ---
+
+// Scoped: one JobService per request. It asks for JoblyDbContext, which is also scoped.
 builder.Services.AddScoped<IJobService, JobService>();
 
-// The CV use cases, and the Match agent that compares the CV with a job using the language model.
+// The CV use cases. The file reader keeps no state, so one shared instance (singleton) is enough.
 builder.Services.AddScoped<ICvService, CvService>();
+builder.Services.AddSingleton<ICvTextExtractor, CvTextExtractor>();
+
+// The Match agent that compares the CV with a job using the language model.
 builder.Services.AddScoped<IMatchAgent, MatchAgent>();
 
 // No endpoint needs a request bigger than a 5 MB CV file plus the form's own overhead. Anything larger is refused
